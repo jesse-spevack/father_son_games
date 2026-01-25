@@ -7,7 +7,11 @@ import Phaser from 'phaser';
 export default class Bullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'sprites', 'vulcan_1.png');
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
     this.speed = 500;
+    this.setActive(false);
+    this.setVisible(false);
   }
 
   /**

@@ -10,6 +10,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Initialize score and lives
+    this.score = 0;
+    this.lives = 3;
+    this.isInvincible = false;
+
     // Add scrolling background
     this.background = this.add.tileSprite(
       this.cameras.main.centerX,
@@ -35,15 +40,6 @@ export default class GameScene extends Phaser.Scene {
     );
     this.exhaust.play('exhaust');
     this.exhaust.setDepth(-1); // Behind player
-
-    // Test mine sprite with spin animation
-    this.testMine = this.add.sprite(
-      this.cameras.main.centerX - 100,
-      150,
-      'sprites',
-      'mine_1_01.png'
-    );
-    this.testMine.play('mine1_spin');
 
     // Create enemy bullet group with object pooling
     this.enemyBullets = this.physics.add.group({
@@ -78,6 +74,14 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup touch controls indicator (visual feedback for touch area)
     this.setupTouchIndicator();
+
+    // Setup collision detection
+    this.setupCollisions();
+
+    // Create UI elements
+    this.createHealthBar();
+    this.createScoreText();
+    this.createLivesDisplay();
   }
 
   /**
@@ -206,9 +210,212 @@ export default class GameScene extends Phaser.Scene {
     if (this.gameStarted && this.enemySpawner) {
       this.enemySpawner.update(this.time.now, this.game.loop.delta);
     }
+
+    // Update UI
+    this.updateHealthBar();
+    this.updateScore();
   }
 
   gameOver() {
-    this.scene.start('GameOverScene', { score: this.score || 0 });
+    this.scene.start('GameOverScene', { score: this.score });
+  }
+
+  /**
+   * Setup collision detection between game objects.
+   */
+  setupCollisions() {
+    // Player bullets vs enemies
+    this.physics.add.overlap(
+      this.bullets,
+      this.enemySpawner.getEnemyGroup(),
+      this.bulletHitEnemy,
+      null,
+      this
+    );
+
+    // Enemy bullets vs player
+    this.physics.add.overlap(
+      this.enemyBullets,
+      this.player,
+      this.enemyBulletHitPlayer,
+      null,
+      this
+    );
+
+    // Enemies vs player (collision damage)
+    this.physics.add.overlap(
+      this.enemySpawner.getEnemyGroup(),
+      this.player,
+      this.enemyHitPlayer,
+      null,
+      this
+    );
+  }
+
+  /**
+   * Handle player bullet hitting an enemy.
+   * @param {Bullet} bullet - The bullet that hit
+   * @param {Enemy} enemy - The enemy that was hit
+   */
+  bulletHitEnemy(bullet, enemy) {
+    bullet.setActive(false);
+    bullet.setVisible(false);
+
+    // Play explosion at enemy position
+    this.playExplosion(enemy.x, enemy.y);
+
+    // Damage enemy and add score if killed
+    if (enemy.takeDamage(1)) {
+      this.score += enemy.points;
+    }
+  }
+
+  /**
+   * Handle enemy bullet hitting the player.
+   * @param {Player} player - The player
+   * @param {EnemyBullet} bullet - The enemy bullet
+   */
+  enemyBulletHitPlayer(player, bullet) {
+    if (this.isInvincible) return;
+
+    bullet.setActive(false);
+    bullet.setVisible(false);
+
+    if (!this.player.takeDamage(10)) {
+      this.loseLife();
+    }
+  }
+
+  /**
+   * Handle enemy colliding with player.
+   * @param {Player} player - The player
+   * @param {Enemy} enemy - The enemy that collided
+   */
+  enemyHitPlayer(player, enemy) {
+    if (this.isInvincible) return;
+
+    this.playExplosion(enemy.x, enemy.y);
+    enemy.destroy();
+
+    if (!this.player.takeDamage(25)) {
+      this.loseLife();
+    }
+  }
+
+  /**
+   * Lose a life and respawn or game over.
+   */
+  loseLife() {
+    this.lives--;
+    this.updateLivesDisplay();
+
+    if (this.lives <= 0) {
+      this.playExplosion(this.player.x, this.player.y);
+      this.gameOver();
+    } else {
+      // Respawn with invincibility
+      this.respawnPlayer();
+    }
+  }
+
+  /**
+   * Respawn player with temporary invincibility.
+   */
+  respawnPlayer() {
+    // Play explosion at current position
+    this.playExplosion(this.player.x, this.player.y);
+
+    // Reset player position and health
+    this.player.setPosition(this.cameras.main.centerX, this.cameras.main.height - 100);
+    this.player.health = this.player.maxHealth;
+
+    // Make invincible and flash
+    this.isInvincible = true;
+    this.player.setAlpha(0.5);
+
+    // Flash effect
+    this.tweens.add({
+      targets: this.player,
+      alpha: { from: 0.3, to: 0.8 },
+      duration: 100,
+      repeat: 15,
+      yoyo: true,
+      onComplete: () => {
+        this.isInvincible = false;
+        this.player.setAlpha(1);
+      }
+    });
+  }
+
+  /**
+   * Play a random explosion animation at the given position.
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   */
+  playExplosion(x, y) {
+    const explosions = ['explosion1', 'explosion2', 'explosion3'];
+    const key = Phaser.Math.RND.pick(explosions);
+    const explosion = this.add.sprite(x, y, 'sprites');
+    explosion.play(key);
+    explosion.once('animationcomplete', () => explosion.destroy());
+  }
+
+  /**
+   * Create health bar UI element.
+   */
+  createHealthBar() {
+    this.healthBarBg = this.add.rectangle(10, 10, 104, 14, 0x000000).setOrigin(0, 0);
+    this.healthBar = this.add.rectangle(12, 12, 100, 10, 0x00ff00).setOrigin(0, 0);
+    this.healthBarBg.setScrollFactor(0).setDepth(100);
+    this.healthBar.setScrollFactor(0).setDepth(100);
+  }
+
+  /**
+   * Update health bar based on player health.
+   */
+  updateHealthBar() {
+    const percent = this.player.getHealthPercent();
+    this.healthBar.width = 100 * percent;
+    this.healthBar.fillColor = percent > 0.5 ? 0x00ff00 : percent > 0.25 ? 0xffff00 : 0xff0000;
+  }
+
+  /**
+   * Create score text UI element.
+   */
+  createScoreText() {
+    this.scoreText = this.add.text(this.cameras.main.width - 10, 10, 'Score: 0', {
+      font: '16px monospace',
+      fill: '#ffffff'
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+  }
+
+  /**
+   * Update score text display.
+   */
+  updateScore() {
+    this.scoreText.setText('Score: ' + this.score);
+  }
+
+  /**
+   * Create lives display using ship icons.
+   */
+  createLivesDisplay() {
+    this.livesIcons = [];
+    for (let i = 0; i < this.lives; i++) {
+      const icon = this.add.sprite(130 + i * 25, 17, 'sprites', 'player_r_m.png');
+      icon.setScale(0.3);
+      icon.setScrollFactor(0);
+      icon.setDepth(100);
+      this.livesIcons.push(icon);
+    }
+  }
+
+  /**
+   * Update lives display.
+   */
+  updateLivesDisplay() {
+    this.livesIcons.forEach((icon, index) => {
+      icon.setVisible(index < this.lives);
+    });
   }
 }
