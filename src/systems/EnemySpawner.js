@@ -32,6 +32,9 @@ export default class EnemySpawner {
     // Formation spacing
     this.shipSpacing = 50;
 
+    // Difficulty multiplier (set by GameScene)
+    this.difficultyMultiplier = 1;
+
     // Screen dimensions
     this.screenWidth = scene.cameras.main.width;
     this.screenHeight = scene.cameras.main.height;
@@ -93,6 +96,11 @@ export default class EnemySpawner {
     if (velocityX !== 0) {
       enemy.setVelocityX(velocityX);
     }
+
+    // Apply difficulty multiplier
+    enemy.speed *= this.difficultyMultiplier;
+    enemy.setVelocityY(enemy.speed);
+    enemy.fireRate = Math.max(500, enemy.fireRate / this.difficultyMultiplier);
 
     return enemy;
   }

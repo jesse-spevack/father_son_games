@@ -3,6 +3,7 @@ import Player from '../sprites/Player.js';
 import Bullet from '../sprites/Bullet.js';
 import EnemyBullet from '../sprites/EnemyBullet.js';
 import EnemySpawner from '../systems/EnemySpawner.js';
+import Mine from '../sprites/Mine.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -51,6 +52,19 @@ export default class GameScene extends Phaser.Scene {
     // Initialize enemy spawner with bullet group for shooting
     this.enemySpawner = new EnemySpawner(this, this.enemyBullets);
 
+    // Initialize mine group and spawn timer
+    this.mines = this.physics.add.group({
+      classType: Mine,
+      runChildUpdate: true
+    });
+    this.mineSpawnTimer = 0;
+    this.mineSpawnInterval = 3000; // Spawn mine every 3 seconds
+
+    // Difficulty progression tracking
+    this.difficulty = 1;
+    this.difficultyTimer = 0;
+    this.difficultyInterval = 30000; // Increase difficulty every 30 seconds
+
     // Placeholder text
     this.titleText = this.add.text(
       this.cameras.main.centerX,
@@ -82,6 +96,7 @@ export default class GameScene extends Phaser.Scene {
     this.createHealthBar();
     this.createScoreText();
     this.createLivesDisplay();
+    this.createWaveDisplay();
   }
 
   /**
@@ -211,6 +226,24 @@ export default class GameScene extends Phaser.Scene {
       this.enemySpawner.update(this.time.now, this.game.loop.delta);
     }
 
+    // Increase difficulty over time
+    if (this.gameStarted) {
+      this.difficultyTimer += this.game.loop.delta;
+      if (this.difficultyTimer >= this.difficultyInterval) {
+        this.difficultyTimer = 0;
+        this.increaseDifficulty();
+      }
+    }
+
+    // Spawn mines periodically
+    if (this.gameStarted) {
+      this.mineSpawnTimer += this.game.loop.delta;
+      if (this.mineSpawnTimer >= this.mineSpawnInterval) {
+        this.mineSpawnTimer = 0;
+        this.spawnMine();
+      }
+    }
+
     // Update UI
     this.updateHealthBar();
     this.updateScore();
@@ -218,6 +251,29 @@ export default class GameScene extends Phaser.Scene {
 
   gameOver() {
     this.scene.start('GameOverScene', { score: this.score });
+  }
+
+  /**
+   * Increase difficulty level - makes enemies spawn faster, move faster, and shoot more.
+   */
+  increaseDifficulty() {
+    this.difficulty++;
+    console.log('Difficulty increased to', this.difficulty);
+
+    // Reduce spawn interval (more enemies)
+    this.enemySpawner.minSpawnInterval = Math.max(500, 1000 - this.difficulty * 100);
+    this.enemySpawner.maxSpawnInterval = Math.max(1000, 3000 - this.difficulty * 200);
+
+    // Increase enemy speed and fire rate via spawner
+    this.enemySpawner.difficultyMultiplier = 1 + (this.difficulty - 1) * 0.1;
+
+    // Spawn mines faster with difficulty
+    this.mineSpawnInterval = Math.max(2000, 5000 - this.difficulty * 300);
+
+    // Update wave display if it exists
+    if (this.waveText) {
+      this.waveText.setText('Wave ' + this.difficulty);
+    }
   }
 
   /**
@@ -250,6 +306,34 @@ export default class GameScene extends Phaser.Scene {
       null,
       this
     );
+
+    // Mines vs player (proximity explosion handled in Mine.preUpdate)
+    // Keep this for direct collision
+    this.physics.add.overlap(
+      this.mines,
+      this.player,
+      this.mineHitPlayer,
+      null,
+      this
+    );
+
+    // Player bullets vs mines (mines can be destroyed)
+    this.physics.add.overlap(
+      this.bullets,
+      this.mines,
+      this.bulletHitMine,
+      null,
+      this
+    );
+  }
+
+  /**
+   * Handle player bullet hitting a mine.
+   */
+  bulletHitMine(bullet, mine) {
+    bullet.setActive(false);
+    bullet.setVisible(false);
+    mine.takeDamage(1);
   }
 
   /**
@@ -300,6 +384,28 @@ export default class GameScene extends Phaser.Scene {
     if (!this.player.takeDamage(25)) {
       this.loseLife();
     }
+  }
+
+  /**
+   * Spawn a mine at a random x position above the screen.
+   */
+  spawnMine() {
+    const x = Phaser.Math.Between(50, this.cameras.main.width - 50);
+    const mine = new Mine(this, x, -30);
+    this.mines.add(mine);
+  }
+
+  /**
+   * Handle mine colliding with player.
+   * Mines damage player but are not destroyed.
+   * @param {Player} player - The player
+   * @param {Mine} mine - The mine that collided
+   */
+  mineHitPlayer(player, mine) {
+    if (this.isInvincible) return;
+
+    // Mine explodes on direct contact
+    mine.explode();
   }
 
   /**
@@ -417,5 +523,15 @@ export default class GameScene extends Phaser.Scene {
     this.livesIcons.forEach((icon, index) => {
       icon.setVisible(index < this.lives);
     });
+  }
+
+  /**
+   * Create wave/difficulty display.
+   */
+  createWaveDisplay() {
+    this.waveText = this.add.text(this.cameras.main.centerX, 10, 'Wave 1', {
+      font: '16px monospace',
+      fill: '#ffffff'
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
   }
 }
