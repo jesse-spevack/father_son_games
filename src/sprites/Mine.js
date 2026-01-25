@@ -67,25 +67,28 @@ export default class Mine extends Phaser.Physics.Arcade.Sprite {
   }
 
   explode() {
+    // Capture scene reference before destroy
+    const scene = this.scene;
+
     // Play explosion
-    this.scene.playExplosion(this.x, this.y);
+    scene.playExplosion(this.x, this.y);
 
     // Add score
-    this.scene.score += this.points;
+    scene.gameState.addScore(this.points);
 
     // Damage player if close enough and not invincible
-    const player = this.scene.player;
-    if (player && player.active && !this.scene.isInvincible) {
+    const player = scene.player;
+    if (player && player.active && !scene.gameState.isInvincible) {
       const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
       if (dist < this.proximityRadius * 1.5) { // Explosion radius is larger
         if (!player.takeDamage(this.damage)) {
-          this.scene.loseLife();
+          scene.loseLife();
         } else {
           // Brief invincibility after mine damage
-          this.scene.isInvincible = true;
+          scene.gameState.isInvincible = true;
           player.setAlpha(0.5);
-          this.scene.time.delayedCall(500, () => {
-            this.scene.isInvincible = false;
+          scene.time.delayedCall(500, () => {
+            scene.gameState.isInvincible = false;
             player.setAlpha(1);
           });
         }
