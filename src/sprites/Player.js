@@ -1,0 +1,206 @@
+import Phaser from 'phaser';
+
+/**
+ * Player ship class with movement controls (keyboard + touch).
+ * Extends Phaser.Physics.Arcade.Sprite for physics-based movement.
+ */
+export default class Player extends Phaser.Physics.Arcade.Sprite {
+  constructor(scene, x, y) {
+    super(scene, x, y, 'sprites', 'player_r_m.png');
+
+    // Add to scene and physics
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+
+    // Store scene reference
+    this.scene = scene;
+
+    // Player properties
+    this.speed = 300;
+    this.health = 100;
+    this.maxHealth = 100;
+
+    // Configure physics body
+    this.setCollideWorldBounds(true);
+    this.body.setSize(this.width * 0.8, this.height * 0.8); // Slightly smaller hitbox
+
+    // Tilt frame names for visual feedback
+    this.tiltFrames = {
+      left2: 'player_r_l2.png',
+      left1: 'player_r_l1.png',
+      center: 'player_r_m.png',
+      right1: 'player_r_r1.png',
+      right2: 'player_r_r2.png',
+    };
+
+    // Touch control state
+    this.touchTarget = null;
+    this.touchDeadzone = 10; // Pixels from player center to ignore
+
+    // Setup keyboard controls
+    this.cursors = scene.input.keyboard.createCursorKeys();
+    this.wasd = scene.input.keyboard.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.W,
+      down: Phaser.Input.Keyboard.KeyCodes.S,
+      left: Phaser.Input.Keyboard.KeyCodes.A,
+      right: Phaser.Input.Keyboard.KeyCodes.D,
+    });
+  }
+
+  /**
+   * Update player movement and visuals.
+   * Called from scene's update loop.
+   */
+  update() {
+    // Handle keyboard input
+    const keyboardVelocity = this.handleKeyboardInput();
+
+    // Handle touch input (touch takes priority if active)
+    const touchVelocity = this.handleTouchInput();
+
+    // Apply velocity (touch overrides keyboard if active)
+    if (touchVelocity) {
+      this.setVelocity(touchVelocity.x, touchVelocity.y);
+    } else {
+      this.setVelocity(keyboardVelocity.x, keyboardVelocity.y);
+    }
+
+    // Update tilt based on horizontal velocity
+    this.updateTilt();
+  }
+
+  /**
+   * Handle keyboard arrow keys and WASD input.
+   * @returns {{ x: number, y: number }} Velocity vector
+   */
+  handleKeyboardInput() {
+    let vx = 0;
+    let vy = 0;
+
+    // Horizontal movement
+    if (this.cursors.left.isDown || this.wasd.left.isDown) {
+      vx = -this.speed;
+    } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
+      vx = this.speed;
+    }
+
+    // Vertical movement
+    if (this.cursors.up.isDown || this.wasd.up.isDown) {
+      vy = -this.speed;
+    } else if (this.cursors.down.isDown || this.wasd.down.isDown) {
+      vy = this.speed;
+    }
+
+    // Normalize diagonal movement to prevent faster diagonal speed
+    if (vx !== 0 && vy !== 0) {
+      const factor = Math.SQRT1_2; // 1 / sqrt(2)
+      vx *= factor;
+      vy *= factor;
+    }
+
+    return { x: vx, y: vy };
+  }
+
+  /**
+   * Handle touch/pointer input - player moves toward touch point.
+   * @returns {{ x: number, y: number } | null} Velocity vector or null if no touch
+   */
+  handleTouchInput() {
+    const pointer = this.scene.input.activePointer;
+
+    // Only handle touch if pointer is down
+    if (!pointer.isDown) {
+      this.touchTarget = null;
+      return null;
+    }
+
+    // Get pointer position in world coordinates
+    const targetX = pointer.worldX;
+    const targetY = pointer.worldY;
+
+    // Calculate distance to target
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If within deadzone, stop moving
+    if (distance < this.touchDeadzone) {
+      return { x: 0, y: 0 };
+    }
+
+    // Calculate velocity toward target
+    // Use distance-based speed for smoother stop near target
+    const speedMultiplier = Math.min(1, distance / 50);
+    const adjustedSpeed = this.speed * speedMultiplier;
+
+    const vx = (dx / distance) * adjustedSpeed;
+    const vy = (dy / distance) * adjustedSpeed;
+
+    return { x: vx, y: vy };
+  }
+
+  /**
+   * Update the player sprite tilt based on horizontal velocity.
+   */
+  updateTilt() {
+    const vx = this.body.velocity.x;
+    const threshold = this.speed * 0.3; // 30% of max speed for initial tilt
+    const maxThreshold = this.speed * 0.7; // 70% for max tilt
+
+    if (vx < -maxThreshold) {
+      this.setFrame(this.tiltFrames.left2);
+    } else if (vx < -threshold) {
+      this.setFrame(this.tiltFrames.left1);
+    } else if (vx > maxThreshold) {
+      this.setFrame(this.tiltFrames.right2);
+    } else if (vx > threshold) {
+      this.setFrame(this.tiltFrames.right1);
+    } else {
+      this.setFrame(this.tiltFrames.center);
+    }
+  }
+
+  /**
+   * Apply damage to the player.
+   * @param {number} amount - Amount of damage to apply
+   * @returns {boolean} True if player is still alive
+   */
+  takeDamage(amount) {
+    this.health = Math.max(0, this.health - amount);
+
+    // Flash effect for damage feedback
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 2,
+    });
+
+    return this.health > 0;
+  }
+
+  /**
+   * Heal the player.
+   * @param {number} amount - Amount to heal
+   */
+  heal(amount) {
+    this.health = Math.min(this.maxHealth, this.health + amount);
+  }
+
+  /**
+   * Check if player is alive.
+   * @returns {boolean} True if health > 0
+   */
+  isAlive() {
+    return this.health > 0;
+  }
+
+  /**
+   * Get current health percentage (0-1).
+   * @returns {number} Health percentage
+   */
+  getHealthPercent() {
+    return this.health / this.maxHealth;
+  }
+}
