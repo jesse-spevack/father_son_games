@@ -2,15 +2,17 @@ import Phaser from 'phaser';
 import GameConfig from '../config/GameConfig.js';
 
 /**
- * Boss enemy class - the Doomstar
+ * Boss enemy class - Megaship Boss 1
  * Multi-phase boss with different attack patterns per phase.
+ * Uses single sprite frame with code-based visual effects.
  * Phase 1 (100-66%): Spray + aimed attacks
  * Phase 2 (66-33%): + summons fighters
  * Phase 3 (33-0%): + summons heavies, faster attacks
  */
 export default class Boss extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y) {
-    super(scene, x, y, 'boss_idle_01');
+    // Use the space boss sprite
+    super(scene, x, y, 'space_boss');
 
     // Add to scene
     scene.add.existing(this);
@@ -69,11 +71,53 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.body.setSize(this.width * 0.8, this.height * 0.6);
     this.body.setOffset(this.width * 0.1, this.height * 0.2);
 
-    // Scale up the boss (it should be imposing)
-    this.setScale(1.5);
+    // Scale the boss (image is 1024x1024, scale to ~180px)
+    this.setScale(0.18);
 
-    // Start idle animation
-    this.play('boss_idle');
+    // Phase colors for visual feedback
+    this.phaseColors = {
+      1: 0xffffff, // Normal
+      2: 0xffaa00, // Orange - phase 2
+      3: 0xff4444  // Red - phase 3
+    };
+
+    // Start idle pulsing effect
+    this.startIdlePulse();
+  }
+
+  /**
+   * Create a gentle pulsing effect for idle state
+   */
+  startIdlePulse() {
+    this.idleTween = this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.19,
+      scaleY: 0.17,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  /**
+   * Stop idle pulse (during attacks)
+   */
+  stopIdlePulse() {
+    if (this.idleTween) {
+      this.idleTween.stop();
+      this.setScale(0.18);
+    }
+  }
+
+  /**
+   * Resume idle pulse after attacks
+   */
+  resumeIdlePulse() {
+    if (this.idleTween) {
+      this.idleTween.stop();
+    }
+    this.startIdlePulse();
   }
 
   /**
@@ -103,19 +147,34 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.currentPhase = newPhase;
     console.log(`Boss entered phase ${newPhase}!`);
 
-    // Flash to indicate phase change
+    // Dramatic phase change effect
+    this.stopIdlePulse();
+
+    // Flash and color change
     this.scene.tweens.add({
       targets: this,
-      alpha: 0.3,
-      duration: 100,
+      scaleX: 0.22,
+      scaleY: 0.22,
+      duration: 200,
       yoyo: true,
-      repeat: 3
+      repeat: 2,
+      onComplete: () => {
+        this.setTint(this.phaseColors[newPhase]);
+        this.resumeIdlePulse();
+      }
     });
 
-    // Could add screen shake, sound effects, etc.
-    if (this.scene.cameras && this.scene.cameras.main) {
-      this.scene.cameras.main.shake(200, 0.01);
-    }
+    // Alpha flash
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 4
+    });
+
+    // Big screen shake for phase transition
+    this.scene.cameras.main.shake(400, 0.02);
   }
 
   /**
@@ -134,19 +193,23 @@ export default class Boss extends Phaser.GameObjects.Sprite {
       this.onPhaseChange(newPhase);
     }
 
-    // Play damage animation
-    this.play('boss_damaged', true);
-    this.once('animationcomplete-boss_damaged', () => {
-      if (!this.isDying) {
-        this.play('boss_idle');
+    // Damage flash effect - white flash then back to phase color
+    this.setTint(0xffffff);
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.21,
+      scaleY: 0.21,
+      duration: 50,
+      yoyo: true,
+      onComplete: () => {
+        if (this.active && !this.isDying) {
+          this.setTint(this.phaseColors[this.currentPhase]);
+        }
       }
     });
 
-    // Flash red
-    this.setTint(0xff0000);
-    this.scene.time.delayedCall(100, () => {
-      if (this.active) this.clearTint();
-    });
+    // Small screen shake on hit
+    this.scene.cameras.main.shake(50, 0.005);
 
     // Check for death
     if (this.health <= 0) {
@@ -158,20 +221,65 @@ export default class Boss extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Boss death sequence
+   * Boss death sequence with dramatic code effects
    */
   die() {
     this.isDying = true;
     this.body.enable = false;
+    this.stopIdlePulse();
 
-    // Play death animation
-    this.play('boss_death');
+    // Big screen shake
+    this.scene.cameras.main.shake(500, 0.03);
 
-    this.once('animationcomplete-boss_death', () => {
-      // Emit event for rewards
-      this.scene.events.emit('bossDefeated', this);
-      this.destroy();
+    // Flash rapidly between colors
+    let flashCount = 0;
+    const flashTimer = this.scene.time.addEvent({
+      delay: 80,
+      callback: () => {
+        flashCount++;
+        this.setTint(flashCount % 2 === 0 ? 0xffffff : 0xff0000);
+      },
+      repeat: 10
     });
+
+    // Spin and shrink
+    this.scene.tweens.add({
+      targets: this,
+      angle: 720,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 1500,
+      ease: 'Power2',
+      onComplete: () => {
+        // Create explosion particles at death location
+        this.createDeathExplosion();
+        // Emit event for rewards
+        this.scene.events.emit('bossDefeated', this);
+        this.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create particle explosion effect on death
+   */
+  createDeathExplosion() {
+    // Create multiple expanding circles
+    for (let i = 0; i < 3; i++) {
+      const circle = this.scene.add.circle(this.x, this.y, 10, 0xff6600);
+      this.scene.tweens.add({
+        targets: circle,
+        radius: 150 + i * 50,
+        alpha: 0,
+        duration: 500 + i * 200,
+        delay: i * 100,
+        onComplete: () => circle.destroy()
+      });
+    }
+
+    // Flash the screen
+    this.scene.cameras.main.flash(300, 255, 200, 100);
   }
 
   /**
@@ -267,35 +375,42 @@ export default class Boss extends Phaser.GameObjects.Sprite {
    */
   sprayAttack() {
     this.isAttacking = true;
-    this.play('boss_attack', true);
+    this.stopIdlePulse();
 
-    // Fire bullets at animation midpoint
-    this.scene.time.delayedCall(200, () => {
-      if (!this.active || this.isDying) return;
+    // Attack windup - quick scale up
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.22,
+      scaleY: 0.22,
+      duration: 150,
+      yoyo: true,
+      onYoyo: () => {
+        // Fire bullets at peak of windup
+        if (!this.active || this.isDying) return;
 
-      const angleStep = this.sprayAngle / (this.sprayBulletCount - 1);
-      const startAngle = 90 - this.sprayAngle / 2; // 90 = straight down
+        const angleStep = this.sprayAngle / (this.sprayBulletCount - 1);
+        const startAngle = 90 - this.sprayAngle / 2; // 90 = straight down
 
-      for (let i = 0; i < this.sprayBulletCount; i++) {
-        const angle = startAngle + i * angleStep;
-        const radians = Phaser.Math.DegToRad(angle);
+        for (let i = 0; i < this.sprayBulletCount; i++) {
+          const angle = startAngle + i * angleStep;
+          const radians = Phaser.Math.DegToRad(angle);
 
-        const bullet = this.bulletGroup.get(this.x, this.y + 30);
-        if (bullet) {
-          bullet.setActive(true);
-          bullet.setVisible(true);
-          bullet.setPosition(this.x, this.y + 30);
-          bullet.setVelocity(
-            Math.cos(radians) * this.sprayBulletSpeed,
-            Math.sin(radians) * this.sprayBulletSpeed
-          );
+          const bullet = this.bulletGroup.get(this.x, this.y + 30);
+          if (bullet) {
+            bullet.setActive(true);
+            bullet.setVisible(true);
+            bullet.setPosition(this.x, this.y + 30);
+            bullet.setVelocity(
+              Math.cos(radians) * this.sprayBulletSpeed,
+              Math.sin(radians) * this.sprayBulletSpeed
+            );
+          }
         }
+      },
+      onComplete: () => {
+        this.isAttacking = false;
+        if (!this.isDying) this.resumeIdlePulse();
       }
-    });
-
-    this.once('animationcomplete-boss_attack', () => {
-      this.isAttacking = false;
-      if (!this.isDying) this.play('boss_idle');
     });
   }
 
@@ -307,38 +422,45 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     if (!player || !player.active) return;
 
     this.isAttacking = true;
-    this.play('boss_attack', true);
+    this.stopIdlePulse();
 
-    this.scene.time.delayedCall(200, () => {
-      if (!this.active || this.isDying) return;
+    // Quick horizontal stretch for aimed attack
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.22,
+      scaleY: 0.15,
+      duration: 100,
+      yoyo: true,
+      onYoyo: () => {
+        if (!this.active || this.isDying) return;
 
-      for (let i = 0; i < this.aimedBulletCount; i++) {
-        // Add slight spread for multiple bullets
-        const spread = (i - (this.aimedBulletCount - 1) / 2) * 20;
+        for (let i = 0; i < this.aimedBulletCount; i++) {
+          // Add slight spread for multiple bullets
+          const spread = (i - (this.aimedBulletCount - 1) / 2) * 20;
 
-        const bullet = this.bulletGroup.get(this.x + spread, this.y + 30);
-        if (bullet) {
-          bullet.setActive(true);
-          bullet.setVisible(true);
-          bullet.setPosition(this.x + spread, this.y + 30);
+          const bullet = this.bulletGroup.get(this.x + spread, this.y + 30);
+          if (bullet) {
+            bullet.setActive(true);
+            bullet.setVisible(true);
+            bullet.setPosition(this.x + spread, this.y + 30);
 
-          // Calculate angle to player
-          const angle = Phaser.Math.Angle.Between(
-            this.x + spread, this.y + 30,
-            player.x, player.y
-          );
+            // Calculate angle to player
+            const angle = Phaser.Math.Angle.Between(
+              this.x + spread, this.y + 30,
+              player.x, player.y
+            );
 
-          bullet.setVelocity(
-            Math.cos(angle) * this.aimedBulletSpeed,
-            Math.sin(angle) * this.aimedBulletSpeed
-          );
+            bullet.setVelocity(
+              Math.cos(angle) * this.aimedBulletSpeed,
+              Math.sin(angle) * this.aimedBulletSpeed
+            );
+          }
         }
+      },
+      onComplete: () => {
+        this.isAttacking = false;
+        if (!this.isDying) this.resumeIdlePulse();
       }
-    });
-
-    this.once('animationcomplete-boss_attack', () => {
-      this.isAttacking = false;
-      if (!this.isDying) this.play('boss_idle');
     });
   }
 

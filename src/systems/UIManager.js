@@ -132,7 +132,7 @@ export default class UIManager {
    * @param {string} bossName - Name to display
    * @param {number} maxHealth - Boss max health for scaling
    */
-  showBossHealth(bossName = 'DOOMSTAR', maxHealth = 100) {
+  showBossHealth(bossName = 'MEGASHIP BOSS 1', maxHealth = 100) {
     const width = this.scene.cameras.main.width;
     const barWidth = width * 0.6;
     const barX = (width - barWidth) / 2;

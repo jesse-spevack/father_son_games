@@ -185,20 +185,29 @@ export default class CollisionManager {
    * @param {Bullet} bullet - The bullet that hit
    * @param {Boss} boss - The boss that was hit
    */
-  bulletHitBoss(bullet, boss) {
+  bulletHitBoss(obj1, obj2) {
+    // Phaser may pass objects in either order - figure out which is which
+    const bullet = obj1.constructor.name === 'Bullet' ? obj1 : obj2;
+    const boss = obj1.constructor.name === 'Bullet' ? obj2 : obj1;
+
     bullet.setActive(false);
     bullet.setVisible(false);
 
     // Damage boss (no explosion on each hit - boss is tough)
-    boss.takeDamage(1);
+    if (boss.takeDamage) {
+      boss.takeDamage(1);
+    }
   }
 
   /**
    * Handle boss body collision with player.
-   * @param {Boss} boss - The boss
-   * @param {Player} player - The player
+   * @param {Object} obj1 - First collision object
+   * @param {Object} obj2 - Second collision object
    */
-  bossHitPlayer(boss, player) {
+  bossHitPlayer(obj1, obj2) {
+    // Figure out which is boss and which is player
+    const boss = obj1.maxHealth ? obj1 : obj2;
+
     if (this.scene.player.isInvincible) return;
     if (boss.isDying) return;
 

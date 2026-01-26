@@ -67,7 +67,7 @@ export default {
 
     // Spawn timing
     SPAWN_INTERVAL: 120000, // 2 minutes between bosses
-    FIRST_SPAWN_DELAY: 60000, // 1 minute before first boss
+    FIRST_SPAWN_DELAY: 30000, // 30 seconds before first boss
 
     // Phase thresholds (percentage of max health)
     PHASE_2_THRESHOLD: 0.66,
