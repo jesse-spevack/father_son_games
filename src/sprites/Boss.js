@@ -262,24 +262,44 @@ export default class Boss extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Create particle explosion effect on death
+   * Create sprite explosion effects on death
    */
   createDeathExplosion() {
-    // Create multiple expanding circles
-    for (let i = 0; i < 3; i++) {
-      const circle = this.scene.add.circle(this.x, this.y, 10, 0xff6600);
-      this.scene.tweens.add({
-        targets: circle,
-        radius: 150 + i * 50,
-        alpha: 0,
-        duration: 500 + i * 200,
-        delay: i * 100,
-        onComplete: () => circle.destroy()
+    // Capture references before boss is destroyed
+    const scene = this.scene;
+    const bossX = this.x;
+    const bossY = this.y;
+
+    // Create multiple sprite explosions at different positions
+    const explosionTypes = ['explosion1', 'explosion2', 'explosion3'];
+    const offsets = [
+      { x: 0, y: 0, delay: 0, scale: 2 },
+      { x: -40, y: -30, delay: 100, scale: 1.5 },
+      { x: 40, y: -30, delay: 150, scale: 1.5 },
+      { x: -30, y: 30, delay: 200, scale: 1.2 },
+      { x: 30, y: 30, delay: 250, scale: 1.2 },
+      { x: 0, y: -50, delay: 300, scale: 1.8 },
+    ];
+
+    offsets.forEach((offset, i) => {
+      scene.time.delayedCall(offset.delay, () => {
+        const explosionType = explosionTypes[i % explosionTypes.length];
+        const explosion = scene.add.sprite(
+          bossX + offset.x,
+          bossY + offset.y,
+          'sprites',
+          'explosion_1_01.png'
+        );
+        explosion.setScale(offset.scale);
+        explosion.play(explosionType);
+        explosion.once('animationcomplete', () => {
+          explosion.destroy();
+        });
       });
-    }
+    });
 
     // Flash the screen
-    this.scene.cameras.main.flash(300, 255, 200, 100);
+    scene.cameras.main.flash(300, 255, 200, 100);
   }
 
   /**
