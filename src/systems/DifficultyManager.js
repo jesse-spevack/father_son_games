@@ -1,3 +1,5 @@
+import GameConfig from '../config/GameConfig.js';
+
 /**
  * DifficultyManager - Handles difficulty progression over time.
  * Manages difficulty levels, timers, and adjustments to spawning rates.
@@ -6,10 +8,14 @@ export default class DifficultyManager {
   /**
    * Create a new DifficultyManager.
    * @param {number} initialDifficulty - Starting difficulty level (default 1)
-   * @param {number} difficultyInterval - Time in ms between difficulty increases (default 30000)
-   * @param {number} mineSpawnInterval - Initial mine spawn interval in ms (default 3000)
+   * @param {number} difficultyInterval - Time in ms between difficulty increases
+   * @param {number} mineSpawnInterval - Initial mine spawn interval in ms
    */
-  constructor(initialDifficulty = 1, difficultyInterval = 30000, mineSpawnInterval = 3000) {
+  constructor(
+    initialDifficulty = 1,
+    difficultyInterval = GameConfig.DIFFICULTY.INTERVAL,
+    mineSpawnInterval = GameConfig.DIFFICULTY.INITIAL_MINE_SPAWN_INTERVAL
+  ) {
     this.difficulty = initialDifficulty;
     this.difficultyInterval = difficultyInterval;
     this.mineSpawnInterval = mineSpawnInterval;
@@ -59,13 +65,16 @@ export default class DifficultyManager {
     console.log('Difficulty increased to', this.difficulty);
 
     // Reduce spawn interval (more enemies)
-    enemySpawner.minSpawnInterval = Math.max(500, 1000 - this.difficulty * 100);
-    enemySpawner.maxSpawnInterval = Math.max(1000, 3000 - this.difficulty * 200);
+    const minSpawnBase = GameConfig.SPAWNER.MIN_SPAWN_INTERVAL;
+    const maxSpawnBase = GameConfig.SPAWNER.MAX_SPAWN_INTERVAL;
+    enemySpawner.minSpawnInterval = Math.max(500, minSpawnBase - this.difficulty * 100);
+    enemySpawner.maxSpawnInterval = Math.max(1000, maxSpawnBase - this.difficulty * 200);
 
     // Increase enemy speed and fire rate via spawner
     enemySpawner.difficultyMultiplier = 1 + (this.difficulty - 1) * 0.1;
 
     // Spawn mines faster with difficulty
-    this.mineSpawnInterval = Math.max(2000, 5000 - this.difficulty * 300);
+    const minMineInterval = GameConfig.DIFFICULTY.MIN_MINE_SPAWN_INTERVAL;
+    this.mineSpawnInterval = Math.max(minMineInterval, 5000 - this.difficulty * 300);
   }
 }

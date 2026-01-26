@@ -102,7 +102,7 @@ export default class CollisionManager {
    * @param {EnemyBullet} bullet - The enemy bullet
    */
   enemyBulletHitPlayer(player, bullet) {
-    if (this.scene.gameState.isInvincible) return;
+    if (this.scene.player.isInvincible) return;
 
     bullet.setActive(false);
     bullet.setVisible(false);
@@ -118,7 +118,7 @@ export default class CollisionManager {
    * @param {Enemy} enemy - The enemy that collided
    */
   enemyHitPlayer(player, enemy) {
-    if (this.scene.gameState.isInvincible) return;
+    if (this.scene.player.isInvincible) return;
 
     this.scene.playExplosion(enemy.x, enemy.y);
     enemy.destroy();
@@ -135,7 +135,7 @@ export default class CollisionManager {
    * @param {Mine} mine - The mine that collided
    */
   mineHitPlayer(player, mine) {
-    if (this.scene.gameState.isInvincible) return;
+    if (this.scene.player.isInvincible) return;
 
     // Mine explodes on direct contact
     mine.explode();

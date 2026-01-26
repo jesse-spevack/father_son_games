@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import GameConfig from '../config/GameConfig.js';
 
 export default class Mine extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
@@ -6,17 +7,20 @@ export default class Mine extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.speed = 60; // Drift downward
-    this.damage = 30;
-    this.health = 2; // Takes 2 hits to destroy
-    this.proximityRadius = 80; // Explode if player gets this close
-    this.points = 50;
+    // Mine properties from config
+    const cfg = GameConfig.MINE;
+    this.speed = cfg.SPEED;
+    this.damage = cfg.DAMAGE;
+    this.health = cfg.HEALTH;
+    this.proximityRadius = cfg.PROXIMITY_RADIUS;
+    this.points = cfg.POINTS;
+    this.explosionRadiusMultiplier = cfg.EXPLOSION_RADIUS_MULTIPLIER;
 
-    // Movement pattern
+    // Movement pattern with randomized wave parameters from config
     this.startX = x;
-    this.waveAmplitude = Phaser.Math.Between(30, 60); // Side-to-side movement
-    this.waveFrequency = Phaser.Math.Between(2, 4); // Speed of oscillation
-    this.timeOffset = Phaser.Math.FloatBetween(0, Math.PI * 2); // Random phase
+    this.waveAmplitude = Phaser.Math.Between(cfg.WAVE_AMPLITUDE_MIN, cfg.WAVE_AMPLITUDE_MAX);
+    this.waveFrequency = Phaser.Math.Between(cfg.WAVE_FREQUENCY_MIN, cfg.WAVE_FREQUENCY_MAX);
+    this.timeOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
 
     // Play spin animation
     this.play('mine1_spin');
@@ -78,19 +82,14 @@ export default class Mine extends Phaser.Physics.Arcade.Sprite {
 
     // Damage player if close enough and not invincible
     const player = scene.player;
-    if (player && player.active && !scene.gameState.isInvincible) {
+    if (player && player.active && !player.isInvincible) {
       const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-      if (dist < this.proximityRadius * 1.5) { // Explosion radius is larger
+      if (dist < this.proximityRadius * this.explosionRadiusMultiplier) {
         if (!player.takeDamage(this.damage)) {
           scene.loseLife();
         } else {
-          // Brief invincibility after mine damage
-          scene.gameState.isInvincible = true;
-          player.setAlpha(0.5);
-          scene.time.delayedCall(500, () => {
-            scene.gameState.isInvincible = false;
-            player.setAlpha(1);
-          });
+          // Brief invincibility after mine damage (500ms)
+          player.makeInvincible(500);
         }
       }
     }

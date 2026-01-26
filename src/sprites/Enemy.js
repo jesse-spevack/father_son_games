@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import GameConfig from '../config/GameConfig.js';
 
 /**
  * Enemy ship class - extends Phaser physics sprite
@@ -24,20 +25,14 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.enemyType = type;
     this.color = color;
 
-    // Type-specific stats
+    // Type-specific stats from config
     // Type 1 (fighter): fast, weak, low points, shoots less often
     // Type 2 (heavy): slow, tough, high points, shoots more often
-    if (type === 1) {
-      this.health = 1;
-      this.speed = 150;
-      this.points = 100;
-      this.fireRate = 2000; // 2 seconds between shots
-    } else {
-      this.health = 3;
-      this.speed = 80;
-      this.points = 250;
-      this.fireRate = 1500; // 1.5 seconds between shots
-    }
+    const stats = type === 1 ? GameConfig.ENEMY.FIGHTER : GameConfig.ENEMY.HEAVY;
+    this.health = stats.HEALTH;
+    this.speed = stats.SPEED;
+    this.points = stats.POINTS;
+    this.fireRate = stats.FIRE_RATE;
 
     // Shooting state - randomize initial delay so enemies don't all shoot at once
     this.lastFired = -Phaser.Math.Between(0, this.fireRate);
@@ -57,14 +52,15 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   updateTilt() {
     const vx = this.body.velocity.x;
     let newTilt = 'm';
+    const { TILT_THRESHOLD_LOW, TILT_THRESHOLD_HIGH } = GameConfig.ENEMY;
 
-    if (vx < -100) {
+    if (vx < -TILT_THRESHOLD_HIGH) {
       newTilt = 'l2';
-    } else if (vx < -30) {
+    } else if (vx < -TILT_THRESHOLD_LOW) {
       newTilt = 'l1';
-    } else if (vx > 100) {
+    } else if (vx > TILT_THRESHOLD_HIGH) {
       newTilt = 'r2';
-    } else if (vx > 30) {
+    } else if (vx > TILT_THRESHOLD_LOW) {
       newTilt = 'r1';
     }
 

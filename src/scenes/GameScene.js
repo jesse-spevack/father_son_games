@@ -8,6 +8,7 @@ import CollisionManager from '../systems/CollisionManager.js';
 import Mine from '../sprites/Mine.js';
 import GameState from '../systems/GameState.js';
 import UIManager from '../systems/UIManager.js';
+import GameConfig from '../config/GameConfig.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -34,20 +35,10 @@ export default class GameScene extends Phaser.Scene {
       this.cameras.main.height - 100
     );
 
-    // Add exhaust flame behind player (lower depth)
-    this.exhaust = this.add.sprite(
-      this.player.x,
-      this.player.y + 35,
-      'sprites',
-      'exhaust_01.png'
-    );
-    this.exhaust.play('exhaust');
-    this.exhaust.setDepth(-1); // Behind player
-
     // Create enemy bullet group with object pooling
     this.enemyBullets = this.physics.add.group({
       classType: EnemyBullet,
-      maxSize: 50,
+      maxSize: GameConfig.ENEMY_BULLET.POOL_SIZE,
       runChildUpdate: true, // Ensures preUpdate is called on enemy bullets
     });
 
@@ -108,13 +99,13 @@ export default class GameScene extends Phaser.Scene {
     // Create bullet group with object pooling
     this.bullets = this.physics.add.group({
       classType: Bullet,
-      maxSize: 30,
+      maxSize: GameConfig.BULLET.POOL_SIZE,
       runChildUpdate: true, // Ensures preUpdate is called on bullets
     });
 
     // Track last fire time for rate limiting
     this.lastFired = 0;
-    this.fireRate = 150; // Milliseconds between shots
+    this.fireRate = GameConfig.PLAYER.FIRE_RATE;
 
     // Dedicated fire key (spacebar is also used for start, so we use a separate tracking)
     this.fireKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -203,10 +194,6 @@ export default class GameScene extends Phaser.Scene {
     if (this.player) {
       this.player.update();
 
-      // Keep exhaust positioned behind player
-      this.exhaust.x = this.player.x;
-      this.exhaust.y = this.player.y + 35;
-
       // Handle shooting (spacebar or right-side touch)
       if (this.gameState.gameStarted) {
         const time = this.time.now;
@@ -288,26 +275,8 @@ export default class GameScene extends Phaser.Scene {
     // Play explosion at current position
     this.playExplosion(this.player.x, this.player.y);
 
-    // Reset player position and health
-    this.player.setPosition(this.cameras.main.centerX, this.cameras.main.height - 100);
-    this.player.health = this.player.maxHealth;
-
-    // Make invincible and flash
-    this.gameState.isInvincible = true;
-    this.player.setAlpha(0.5);
-
-    // Flash effect
-    this.tweens.add({
-      targets: this.player,
-      alpha: { from: 0.3, to: 0.8 },
-      duration: 100,
-      repeat: 15,
-      yoyo: true,
-      onComplete: () => {
-        this.gameState.isInvincible = false;
-        this.player.setAlpha(1);
-      }
-    });
+    // Respawn player at center bottom with invincibility
+    this.player.respawn(this.cameras.main.centerX, this.cameras.main.height - 100);
   }
 
   /**

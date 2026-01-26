@@ -1,41 +1,20 @@
-import Phaser from 'phaser';
+import BaseProjectile from './BaseProjectile';
 
 /**
  * Enemy bullet class - plasma projectiles shot by enemies
  * Moves downward toward the player
  */
-export default class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
+export default class EnemyBullet extends BaseProjectile {
   constructor(scene, x, y) {
-    super(scene, x, y, 'sprites', 'plasma_1.png');
-    scene.add.existing(this);
-    scene.physics.add.existing(this);
-    this.speed = 300;
-    this.setActive(false);
-    this.setVisible(false);
+    // Enemy bullets move downward (direction = 1) at speed 300
+    super(scene, x, y, 'sprites', 'plasma_1.png', 300, 1);
   }
 
   /**
-   * Fire the bullet from a given position
-   * @param {number} x - Starting X position
-   * @param {number} y - Starting Y position
+   * Check if bullet is off-screen (below visible area)
+   * @returns {boolean} True if bullet should be deactivated
    */
-  fire(x, y) {
-    this.setPosition(x, y);
-    this.setActive(true);
-    this.setVisible(true);
-    this.setVelocityY(this.speed); // Shoot downward (positive Y)
-  }
-
-  /**
-   * Called every frame - check if bullet is off screen
-   */
-  preUpdate(time, delta) {
-    super.preUpdate(time, delta);
-
-    // Deactivate if past bottom of screen
-    if (this.y > this.scene.cameras.main.height + 10) {
-      this.setActive(false);
-      this.setVisible(false);
-    }
+  isOffScreen() {
+    return this.y > this.scene.cameras.main.height + 10;
   }
 }

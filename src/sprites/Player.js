@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import GameConfig from '../config/GameConfig.js';
 
 /**
  * Player ship class with movement controls (keyboard + touch).
@@ -15,10 +16,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Store scene reference
     this.scene = scene;
 
-    // Player properties
-    this.speed = 300;
-    this.health = 100;
-    this.maxHealth = 100;
+    // Add exhaust flame behind player
+    this.exhaust = scene.add.sprite(x, y + 35, 'sprites', 'exhaust_01.png');
+    this.exhaust.play('exhaust');
+    this.exhaust.setDepth(-1); // Behind player
+
+    // Player properties from config
+    this.speed = GameConfig.PLAYER.SPEED;
+    this.health = GameConfig.PLAYER.MAX_HEALTH;
+    this.maxHealth = GameConfig.PLAYER.MAX_HEALTH;
+    this.isInvincible = false;
 
     // Configure physics body
     this.setCollideWorldBounds(true);
@@ -35,7 +42,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Touch control state
     this.touchTarget = null;
-    this.touchDeadzone = 10; // Pixels from player center to ignore
+    this.touchDeadzone = GameConfig.PLAYER.TOUCH_DEADZONE;
 
     // Setup keyboard controls
     this.cursors = scene.input.keyboard.createCursorKeys();
@@ -67,6 +74,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Update tilt based on horizontal velocity
     this.updateTilt();
+
+    // Keep exhaust positioned behind player
+    this.exhaust.x = this.x;
+    this.exhaust.y = this.y + 35;
   }
 
   /**
@@ -202,5 +213,38 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    */
   getHealthPercent() {
     return this.health / this.maxHealth;
+  }
+
+  /**
+   * Make the player temporarily invincible with a flashing effect.
+   * @param {number} [duration] - Duration in ms (default from config)
+   */
+  makeInvincible(duration = GameConfig.PLAYER.INVINCIBILITY_DURATION) {
+    this.isInvincible = true;
+    this.setAlpha(0.5);
+
+    // Flash effect: alpha 0.3 to 0.8, duration 100ms, repeat 15, yoyo
+    this.scene.tweens.add({
+      targets: this,
+      alpha: { from: 0.3, to: 0.8 },
+      duration: 100,
+      repeat: 15,
+      yoyo: true,
+      onComplete: () => {
+        this.isInvincible = false;
+        this.setAlpha(1);
+      }
+    });
+  }
+
+  /**
+   * Respawn the player at a given position with full health and invincibility.
+   * @param {number} x - X position to respawn at
+   * @param {number} y - Y position to respawn at
+   */
+  respawn(x, y) {
+    this.setPosition(x, y);
+    this.health = this.maxHealth;
+    this.makeInvincible();
   }
 }
