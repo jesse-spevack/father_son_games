@@ -5,6 +5,7 @@ import EnemyBullet from '../sprites/EnemyBullet.js';
 import EnemySpawner from '../systems/EnemySpawner.js';
 import DifficultyManager from '../systems/DifficultyManager.js';
 import CollisionManager from '../systems/CollisionManager.js';
+import BossManager from '../systems/BossManager.js';
 import Mine from '../sprites/Mine.js';
 import GameState from '../systems/GameState.js';
 import UIManager from '../systems/UIManager.js';
@@ -90,6 +91,29 @@ export default class GameScene extends Phaser.Scene {
     // Create UI manager and initialize UI elements
     this.uiManager = new UIManager(this);
     this.uiManager.create(this.gameState.lives);
+
+    // Initialize boss manager
+    this.bossManager = new BossManager(this, this.enemySpawner, this.enemyBullets);
+    this.collisionManager.setBossManager(this.bossManager);
+
+    // Setup boss event listeners
+    this.setupBossEvents();
+  }
+
+  /**
+   * Setup event listeners for boss fights.
+   */
+  setupBossEvents() {
+    // When boss spawns, show health bar and setup collisions
+    this.events.on('bossSpawned', (boss) => {
+      this.uiManager.showBossHealth('DOOMSTAR', boss.maxHealth);
+      this.collisionManager.setupBossCollisions(boss);
+    });
+
+    // When boss is defeated, hide health bar
+    this.events.on('bossDefeatedUI', () => {
+      this.uiManager.hideBossHealth();
+    });
   }
 
   /**
@@ -215,16 +239,27 @@ export default class GameScene extends Phaser.Scene {
       this.enemySpawner.update(this.time.now, this.game.loop.delta);
     }
 
-    // Update difficulty progression
-    if (this.gameState.gameStarted) {
+    // Update boss manager
+    if (this.gameState.gameStarted && this.bossManager) {
+      this.bossManager.update(this.game.loop.delta);
+
+      // Update boss health bar if boss is active
+      if (this.bossManager.isBossActive()) {
+        const boss = this.bossManager.getBoss();
+        this.uiManager.updateBossHealth(boss.getHealthPercent());
+      }
+    }
+
+    // Update difficulty progression (only when no boss fight)
+    if (this.gameState.gameStarted && !this.bossManager.isBossActive()) {
       const difficultyIncreased = this.difficultyManager.update(this.game.loop.delta, this.enemySpawner);
       if (difficultyIncreased) {
         this.uiManager.updateWave(this.difficultyManager.getDifficulty());
       }
     }
 
-    // Spawn mines periodically
-    if (this.gameState.gameStarted) {
+    // Spawn mines periodically (only when no boss fight)
+    if (this.gameState.gameStarted && !this.bossManager.isBossActive()) {
       this.gameState.mineSpawnTimer += this.game.loop.delta;
       if (this.gameState.mineSpawnTimer >= this.difficultyManager.getMineSpawnInterval()) {
         this.gameState.mineSpawnTimer = 0;

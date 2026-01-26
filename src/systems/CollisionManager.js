@@ -1,3 +1,5 @@
+import GameConfig from '../config/GameConfig.js';
+
 /**
  * CollisionManager - Handles all collision detection and response in the game.
  * Centralizes collision setup and handler methods for cleaner scene organization.
@@ -9,6 +11,15 @@ export default class CollisionManager {
    */
   constructor(scene) {
     this.scene = scene;
+    this.bossManager = null;
+  }
+
+  /**
+   * Set the boss manager reference for boss collisions
+   * @param {BossManager} bossManager
+   */
+  setBossManager(bossManager) {
+    this.bossManager = bossManager;
   }
 
   /**
@@ -20,6 +31,9 @@ export default class CollisionManager {
    * @param {Player} player - The player sprite
    */
   setup(bullets, enemyBullets, enemies, mines, player) {
+    // Store references for boss collision setup
+    this.bullets = bullets;
+    this.player = player;
     // Player bullets vs enemies
     this.scene.physics.add.overlap(
       bullets,
@@ -139,5 +153,63 @@ export default class CollisionManager {
 
     // Mine explodes on direct contact
     mine.explode();
+  }
+
+  /**
+   * Setup collision detection for boss.
+   * Called when boss spawns.
+   * @param {Boss} boss - The boss sprite
+   */
+  setupBossCollisions(boss) {
+    // Player bullets vs boss
+    this.scene.physics.add.overlap(
+      this.bullets,
+      boss,
+      this.bulletHitBoss,
+      null,
+      this
+    );
+
+    // Boss vs player (body collision)
+    this.scene.physics.add.overlap(
+      boss,
+      this.player,
+      this.bossHitPlayer,
+      null,
+      this
+    );
+  }
+
+  /**
+   * Handle player bullet hitting the boss.
+   * @param {Bullet} bullet - The bullet that hit
+   * @param {Boss} boss - The boss that was hit
+   */
+  bulletHitBoss(bullet, boss) {
+    bullet.setActive(false);
+    bullet.setVisible(false);
+
+    // Damage boss (no explosion on each hit - boss is tough)
+    boss.takeDamage(1);
+  }
+
+  /**
+   * Handle boss body collision with player.
+   * @param {Boss} boss - The boss
+   * @param {Player} player - The player
+   */
+  bossHitPlayer(boss, player) {
+    if (this.scene.player.isInvincible) return;
+    if (boss.isDying) return;
+
+    // Heavy collision damage
+    const damage = GameConfig.BOSS.COLLISION_DAMAGE;
+
+    if (!this.scene.player.takeDamage(damage)) {
+      this.scene.loseLife();
+    } else {
+      // Brief invincibility after boss collision
+      this.scene.player.makeInvincible(1000);
+    }
   }
 }

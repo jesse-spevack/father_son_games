@@ -16,6 +16,12 @@ export default class UIManager {
     this.scoreText = null;
     this.livesIcons = [];
     this.waveText = null;
+
+    // Boss UI elements
+    this.bossHealthBarBg = null;
+    this.bossHealthBar = null;
+    this.bossNameText = null;
+    this.bossHealthVisible = false;
   }
 
   /**
@@ -119,5 +125,97 @@ export default class UIManager {
    */
   updateWave(wave) {
     this.waveText.setText('Wave ' + wave);
+  }
+
+  /**
+   * Show boss health bar when boss spawns.
+   * @param {string} bossName - Name to display
+   * @param {number} maxHealth - Boss max health for scaling
+   */
+  showBossHealth(bossName = 'DOOMSTAR', maxHealth = 100) {
+    const width = this.scene.cameras.main.width;
+    const barWidth = width * 0.6;
+    const barX = (width - barWidth) / 2;
+    const barY = 35;
+
+    // Create boss name text
+    this.bossNameText = this.scene.add.text(width / 2, barY - 5, bossName, {
+      font: 'bold 14px monospace',
+      fill: '#ff4444'
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
+    this.bossNameText.setAlpha(0);
+
+    // Create boss health bar background
+    this.bossHealthBarBg = this.scene.add.rectangle(
+      barX, barY, barWidth + 4, 16, 0x000000
+    ).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    this.bossHealthBarBg.setAlpha(0);
+
+    // Create boss health bar fill
+    this.bossHealthBar = this.scene.add.rectangle(
+      barX + 2, barY + 2, barWidth, 12, 0xff4444
+    ).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    this.bossHealthBar.setData('maxWidth', barWidth);
+    this.bossHealthBar.setAlpha(0);
+
+    // Fade in
+    this.scene.tweens.add({
+      targets: [this.bossNameText, this.bossHealthBarBg, this.bossHealthBar],
+      alpha: 1,
+      duration: 500
+    });
+
+    this.bossHealthVisible = true;
+  }
+
+  /**
+   * Update boss health bar.
+   * @param {number} healthPercent - Current health as decimal (0-1)
+   */
+  updateBossHealth(healthPercent) {
+    if (!this.bossHealthBar || !this.bossHealthVisible) return;
+
+    const maxWidth = this.bossHealthBar.getData('maxWidth');
+    const targetWidth = maxWidth * healthPercent;
+
+    // Smooth width transition
+    this.scene.tweens.add({
+      targets: this.bossHealthBar,
+      width: targetWidth,
+      duration: 100
+    });
+
+    // Color changes at phase thresholds
+    if (healthPercent <= 0.33) {
+      this.bossHealthBar.fillColor = 0xff0000; // Red - phase 3
+    } else if (healthPercent <= 0.66) {
+      this.bossHealthBar.fillColor = 0xff8800; // Orange - phase 2
+    } else {
+      this.bossHealthBar.fillColor = 0xff4444; // Light red - phase 1
+    }
+  }
+
+  /**
+   * Hide boss health bar when boss is defeated.
+   */
+  hideBossHealth() {
+    if (!this.bossHealthVisible) return;
+
+    this.bossHealthVisible = false;
+
+    // Fade out and destroy
+    this.scene.tweens.add({
+      targets: [this.bossNameText, this.bossHealthBarBg, this.bossHealthBar],
+      alpha: 0,
+      duration: 500,
+      onComplete: () => {
+        if (this.bossNameText) this.bossNameText.destroy();
+        if (this.bossHealthBarBg) this.bossHealthBarBg.destroy();
+        if (this.bossHealthBar) this.bossHealthBar.destroy();
+        this.bossNameText = null;
+        this.bossHealthBarBg = null;
+        this.bossHealthBar = null;
+      }
+    });
   }
 }

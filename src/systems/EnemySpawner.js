@@ -35,6 +35,9 @@ export default class EnemySpawner {
     // Difficulty multiplier (set by GameScene)
     this.difficultyMultiplier = 1;
 
+    // Pause state (for boss fights)
+    this.isPaused = false;
+
     // Screen dimensions
     this.screenWidth = scene.cameras.main.width;
     this.screenHeight = scene.cameras.main.height;
@@ -219,6 +222,9 @@ export default class EnemySpawner {
    * @param {number} delta - Time since last frame in ms
    */
   update(time, delta) {
+    // Don't spawn if paused (during boss fights)
+    if (this.isPaused) return;
+
     this.spawnTimer += delta;
 
     if (this.spawnTimer >= this.spawnInterval) {
@@ -233,6 +239,33 @@ export default class EnemySpawner {
         this.maxSpawnInterval
       );
     }
+  }
+
+  /**
+   * Pause spawning (used during boss fights)
+   */
+  pause() {
+    this.isPaused = true;
+  }
+
+  /**
+   * Resume spawning (after boss fights)
+   */
+  resume() {
+    this.isPaused = false;
+  }
+
+  /**
+   * Spawn a single enemy at a specific position.
+   * Used by BossManager for boss summons.
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} type - Enemy type (1 or 2)
+   * @param {string} color - Enemy color
+   * @returns {Enemy} The created enemy
+   */
+  spawnSingleEnemy(x, y, type, color) {
+    return this.createEnemy(x, y, type, color);
   }
 
   /**

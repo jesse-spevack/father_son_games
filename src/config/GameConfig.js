@@ -53,6 +53,52 @@ export default {
     WAVE_FREQUENCY_MAX: 4,
   },
 
+  BOSS: {
+    // Core stats
+    MAX_HEALTH: 100,
+    POINTS: 5000,
+    COLLISION_DAMAGE: 50, // damage to player on body collision
+
+    // Movement
+    SPEED: 80, // side-to-side movement speed
+    ENTER_SPEED: 100, // speed when entering screen
+    Y_POSITION: 80, // anchor position from top of screen
+    MOVEMENT_RANGE: 150, // pixels left/right from center
+
+    // Spawn timing
+    SPAWN_INTERVAL: 120000, // 2 minutes between bosses
+    FIRST_SPAWN_DELAY: 60000, // 1 minute before first boss
+
+    // Phase thresholds (percentage of max health)
+    PHASE_2_THRESHOLD: 0.66,
+    PHASE_3_THRESHOLD: 0.33,
+
+    // Attack cooldowns (ms)
+    SPRAY_COOLDOWN: 2500,
+    AIMED_COOLDOWN: 1800,
+    SUMMON_COOLDOWN: 6000,
+
+    // Phase 3 speed multiplier (faster attacks)
+    PHASE_3_SPEED_MULT: 0.7,
+
+    // Spray attack
+    SPRAY_BULLET_COUNT: 5,
+    SPRAY_ANGLE: 60, // degrees spread
+    SPRAY_BULLET_SPEED: 250,
+
+    // Aimed attack
+    AIMED_BULLET_COUNT: 2,
+    AIMED_BULLET_SPEED: 300,
+
+    // Summon counts per phase
+    SUMMON_FIGHTERS: 3,
+    SUMMON_HEAVIES: 2,
+
+    // Rewards
+    REWARD_EXTRA_LIFE: true,
+    REWARD_POWER_UP: true,
+  },
+
   DIFFICULTY: {
     INTERVAL: 30000, // ms between difficulty increases
     INITIAL_MINE_SPAWN_INTERVAL: 3000,

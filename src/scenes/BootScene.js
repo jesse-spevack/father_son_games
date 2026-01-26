@@ -60,6 +60,23 @@ export default class BootScene extends Phaser.Scene {
 
     // Load background
     this.load.image('background', 'assets/BG.png');
+
+    // Load boss sprites
+    this.loadBossSprites();
+  }
+
+  loadBossSprites() {
+    const bossFrames = [
+      'boss_idle_01', 'boss_idle_02', 'boss_idle_03',
+      'boss_move_01', 'boss_move_02', 'boss_move_03',
+      'boss_attack_01', 'boss_attack_02', 'boss_attack_03', 'boss_attack_04',
+      'boss_damaged_01', 'boss_damaged_02', 'boss_damaged_03',
+      'boss_death_01', 'boss_death_02', 'boss_death_03', 'boss_death_04'
+    ];
+
+    bossFrames.forEach(frame => {
+      this.load.image(frame, `assets/Boss/${frame}.png`);
+    });
   }
 
   create() {
@@ -140,5 +157,65 @@ export default class BootScene extends Phaser.Scene {
     // Enemy tilt frames follow the same pattern as player
     // Colors: r (red), g (green), b (blue)
     // Directions: l2, l1, m, r1, r2
+
+    // Boss animations
+    this.createBossAnimations();
+  }
+
+  createBossAnimations() {
+    // Helper to generate frame array for individual images
+    const makeBossFrames = (prefix, count) => {
+      const frames = [];
+      for (let i = 1; i <= count; i++) {
+        const num = i.toString().padStart(2, '0');
+        frames.push({ key: `${prefix}_${num}` });
+      }
+      return frames;
+    };
+
+    // Boss idle animation (looping)
+    this.anims.create({
+      key: 'boss_idle',
+      frames: makeBossFrames('boss_idle', 3),
+      frameRate: 6,
+      repeat: -1
+    });
+
+    // Boss move animations (for tilt feedback)
+    this.anims.create({
+      key: 'boss_move_left',
+      frames: [{ key: 'boss_move_01' }],
+      frameRate: 1
+    });
+
+    this.anims.create({
+      key: 'boss_move_right',
+      frames: [{ key: 'boss_move_03' }],
+      frameRate: 1
+    });
+
+    // Boss attack animation (single play)
+    this.anims.create({
+      key: 'boss_attack',
+      frames: makeBossFrames('boss_attack', 4),
+      frameRate: 10,
+      repeat: 0
+    });
+
+    // Boss damaged animation (single play)
+    this.anims.create({
+      key: 'boss_damaged',
+      frames: makeBossFrames('boss_damaged', 3),
+      frameRate: 12,
+      repeat: 0
+    });
+
+    // Boss death animation (single play)
+    this.anims.create({
+      key: 'boss_death',
+      frames: makeBossFrames('boss_death', 4),
+      frameRate: 8,
+      repeat: 0
+    });
   }
 }
