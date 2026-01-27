@@ -125,6 +125,10 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
    * @param {Player} player
    */
   collect(player) {
+    // Prevent multiple collections from repeated collision triggers
+    if (!this.active) return;
+    this.setActive(false);
+
     const cfg = GameConfig.POWER_UP;
 
     // Determine text and color based on type
