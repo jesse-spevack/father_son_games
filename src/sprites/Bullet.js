@@ -11,10 +11,10 @@ export default class Bullet extends BaseProjectile {
   }
 
   /**
-   * Check if bullet is off-screen (above visible area)
+   * Check if bullet is off-screen (above or outside visible area)
    * @returns {boolean} True if bullet should be deactivated
    */
   isOffScreen() {
-    return this.y < -10;
+    return this.y < -10 || this.x < -10 || this.x > this.scene.cameras.main.width + 10;
   }
 }

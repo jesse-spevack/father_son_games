@@ -7,6 +7,7 @@ import DifficultyManager from '../systems/DifficultyManager.js';
 import CollisionManager from '../systems/CollisionManager.js';
 import BossManager from '../systems/BossManager.js';
 import Mine from '../sprites/Mine.js';
+import PowerUp, { PowerUpType } from '../sprites/PowerUp.js';
 import GameState from '../systems/GameState.js';
 import UIManager from '../systems/UIManager.js';
 import GameConfig from '../config/GameConfig.js';
@@ -52,6 +53,13 @@ export default class GameScene extends Phaser.Scene {
       runChildUpdate: true
     });
 
+    // Initialize power-up group
+    this.powerUps = this.physics.add.group({
+      classType: PowerUp,
+      maxSize: GameConfig.POWER_UP.POOL_SIZE,
+      runChildUpdate: true
+    });
+
     // Initialize difficulty manager
     this.difficultyManager = new DifficultyManager();
 
@@ -85,7 +93,8 @@ export default class GameScene extends Phaser.Scene {
       this.enemyBullets,
       this.enemySpawner.getEnemyGroup(),
       this.mines,
-      this.player
+      this.player,
+      this.powerUps
     );
 
     // Create UI manager and initialize UI elements
@@ -129,29 +138,53 @@ export default class GameScene extends Phaser.Scene {
 
     // Track last fire time for rate limiting
     this.lastFired = 0;
-    this.fireRate = GameConfig.PLAYER.FIRE_RATE;
 
     // Dedicated fire key (spacebar is also used for start, so we use a separate tracking)
     this.fireKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
   }
 
   /**
-   * Fire a bullet from the player position.
+   * Fire bullets from the player position.
+   * Uses player's weapon level for fire rate and bullet count.
    * @param {number} time - Current game time in milliseconds
    */
   shoot(time) {
-    // Check fire rate
-    if (time < this.lastFired + this.fireRate) {
+    // Check fire rate (use player's upgraded fire rate)
+    const fireRate = this.player.getFireRate();
+    if (time < this.lastFired + fireRate) {
       return;
     }
 
-    // Get bullet from pool
-    const bullet = this.bullets.get(this.player.x, this.player.y - 20);
+    const bulletCount = this.player.getBulletCount();
+    const playerX = this.player.x;
+    const playerY = this.player.y - 20;
 
-    if (bullet) {
-      bullet.fire(this.player.x, this.player.y - 20);
-      this.lastFired = time;
+    // Fire based on bullet count (1, 2, or 3 bullets)
+    if (bulletCount === 1) {
+      // Single bullet - straight ahead
+      const bullet = this.bullets.get(playerX, playerY);
+      if (bullet) {
+        bullet.fire(playerX, playerY);
+      }
+    } else if (bulletCount === 2) {
+      // Double spread - two bullets at slight angles
+      const spread = 15; // pixels offset
+      const bullet1 = this.bullets.get(playerX - spread, playerY);
+      const bullet2 = this.bullets.get(playerX + spread, playerY);
+      if (bullet1) bullet1.fire(playerX - spread, playerY, -0.1);
+      if (bullet2) bullet2.fire(playerX + spread, playerY, 0.1);
+    } else if (bulletCount >= 3) {
+      // Triple spread - center + two angled
+      const spread = 20;
+      const bullet1 = this.bullets.get(playerX, playerY);
+      const bullet2 = this.bullets.get(playerX - spread, playerY);
+      const bullet3 = this.bullets.get(playerX + spread, playerY);
+      if (bullet1) bullet1.fire(playerX, playerY, 0);
+      if (bullet2) bullet2.fire(playerX - spread, playerY, -0.15);
+      if (bullet3) bullet3.fire(playerX + spread, playerY, 0.15);
     }
+
+    this.lastFired = time;
   }
 
   /**

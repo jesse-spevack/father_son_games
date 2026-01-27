@@ -1,6 +1,7 @@
 import GameConfig from '../config/GameConfig.js';
 import Bullet from '../sprites/Bullet.js';
 import Boss from '../sprites/Boss.js';
+import { PowerUpType } from '../sprites/PowerUp.js';
 
 /**
  * CollisionManager - Handles all collision detection and response in the game.
@@ -31,11 +32,14 @@ export default class CollisionManager {
    * @param {Phaser.Physics.Arcade.Group} enemies - Enemy group
    * @param {Phaser.Physics.Arcade.Group} mines - Mine group
    * @param {Player} player - The player sprite
+   * @param {Phaser.Physics.Arcade.Group} powerUps - Power-up group
    */
-  setup(bullets, enemyBullets, enemies, mines, player) {
+  setup(bullets, enemyBullets, enemies, mines, player, powerUps) {
     // Store references for boss collision setup
     this.bullets = bullets;
     this.player = player;
+    this.powerUps = powerUps;
+    this.enemies = enemies;
     // Player bullets vs enemies
     this.scene.physics.add.overlap(
       bullets,
@@ -81,6 +85,15 @@ export default class CollisionManager {
       null,
       this
     );
+
+    // Power-ups vs player (collection)
+    this.scene.physics.add.overlap(
+      powerUps,
+      player,
+      this.powerUpHitPlayer,
+      null,
+      this
+    );
   }
 
   /**
@@ -98,7 +111,29 @@ export default class CollisionManager {
     // Damage enemy and add score if killed
     if (enemy.takeDamage(1)) {
       this.scene.gameState.addScore(enemy.points);
+      this.trySpawnPowerUp(enemy.x, enemy.y);
     }
+  }
+
+  /**
+   * Attempt to spawn a power-up at the given position based on drop chance.
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   */
+  trySpawnPowerUp(x, y) {
+    if (Math.random() > GameConfig.POWER_UP.DROP_CHANCE) {
+      return;
+    }
+
+    // Get power-up from pool
+    const powerUp = this.scene.powerUps.get(x, y);
+    if (!powerUp) return;
+
+    // Randomly select power-up type
+    const types = [PowerUpType.HEALTH, PowerUpType.WEAPON, PowerUpType.SPEED];
+    const type = Phaser.Math.RND.pick(types);
+
+    powerUp.spawn(x, y, type);
   }
 
   /**
@@ -110,6 +145,15 @@ export default class CollisionManager {
     bullet.setActive(false);
     bullet.setVisible(false);
     mine.takeDamage(1);
+  }
+
+  /**
+   * Handle player collecting a power-up.
+   * @param {PowerUp} powerUp - The power-up collected
+   * @param {Player} player - The player
+   */
+  powerUpHitPlayer(powerUp, player) {
+    powerUp.collect(player);
   }
 
   /**

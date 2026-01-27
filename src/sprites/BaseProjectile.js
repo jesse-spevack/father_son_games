@@ -30,12 +30,14 @@ export default class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
    * Called when getting projectile from pool.
    * @param {number} x - Starting X position
    * @param {number} y - Starting Y position
+   * @param {number} [spreadX=0] - Horizontal spread factor (-1 to 1, multiplied by speed)
    */
-  fire(x, y) {
+  fire(x, y, spreadX = 0) {
     this.setPosition(x, y);
     this.setActive(true);
     this.setVisible(true);
     this.setVelocityY(this.speed * this.direction);
+    this.setVelocityX(this.speed * spreadX);
   }
 
   /**

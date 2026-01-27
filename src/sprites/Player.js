@@ -22,10 +22,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.exhaust.setDepth(-1); // Behind player
 
     // Player properties from config
-    this.speed = GameConfig.PLAYER.SPEED;
+    this.baseSpeed = GameConfig.PLAYER.SPEED;
+    this.speed = this.baseSpeed;
     this.health = GameConfig.PLAYER.MAX_HEALTH;
     this.maxHealth = GameConfig.PLAYER.MAX_HEALTH;
     this.isInvincible = false;
+
+    // Power-up state
+    this.weaponLevel = 0; // 0 = base, 1-2 = upgraded
+    this.speedBoostActive = false;
+    this.speedBoostTimer = null;
 
     // Configure physics body
     this.setCollideWorldBounds(true);
@@ -245,6 +251,72 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   respawn(x, y) {
     this.setPosition(x, y);
     this.health = this.maxHealth;
+    this.weaponLevel = 0; // Reset weapon on death
     this.makeInvincible();
+  }
+
+  /**
+   * Upgrade weapon to next level (max 2)
+   */
+  upgradeWeapon() {
+    const maxLevel = GameConfig.POWER_UP.WEAPON.MAX_LEVEL - 1;
+    if (this.weaponLevel < maxLevel) {
+      this.weaponLevel++;
+      console.log(`Weapon upgraded to level ${this.weaponLevel + 1}!`);
+
+      // Visual feedback
+      this.scene.tweens.add({
+        targets: this,
+        scaleX: 1.2,
+        scaleY: 1.2,
+        duration: 100,
+        yoyo: true
+      });
+    }
+  }
+
+  /**
+   * Get current fire rate based on weapon level
+   * @returns {number} Fire rate in ms
+   */
+  getFireRate() {
+    const baserate = GameConfig.PLAYER.FIRE_RATE;
+    const mult = GameConfig.POWER_UP.WEAPON.FIRE_RATE_MULT[this.weaponLevel];
+    return baserate * mult;
+  }
+
+  /**
+   * Get number of bullets to fire based on weapon level
+   * @returns {number} Bullet count
+   */
+  getBulletCount() {
+    return GameConfig.POWER_UP.WEAPON.BULLET_COUNT[this.weaponLevel];
+  }
+
+  /**
+   * Apply temporary speed boost
+   * @param {number} multiplier - Speed multiplier
+   * @param {number} duration - Duration in ms
+   */
+  applySpeedBoost(multiplier, duration) {
+    // Clear existing boost if any
+    if (this.speedBoostTimer) {
+      this.speedBoostTimer.remove();
+    }
+
+    this.speedBoostActive = true;
+    this.speed = this.baseSpeed * multiplier;
+    console.log(`Speed boost active! Speed: ${this.speed}`);
+
+    // Visual feedback - blue tint
+    this.setTint(0x88ccff);
+
+    // End boost after duration
+    this.speedBoostTimer = this.scene.time.delayedCall(duration, () => {
+      this.speedBoostActive = false;
+      this.speed = this.baseSpeed;
+      this.clearTint();
+      console.log('Speed boost ended');
+    });
   }
 }

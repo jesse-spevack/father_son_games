@@ -115,6 +115,30 @@ export default {
     FIGHTER_SPAWN_WEIGHT: 0.7, // 70% chance of fighter vs heavy
   },
 
+  POWER_UP: {
+    DROP_CHANCE: 0.18, // 18% chance on enemy death
+    SPEED: 50, // drift downward speed
+    LIFETIME: 10000, // ms before disappearing
+    POOL_SIZE: 10,
+
+    // Types and their effects
+    HEALTH: {
+      COLOR: 0x00ff00, // green
+      RESTORE_AMOUNT: 25,
+    },
+    WEAPON: {
+      COLOR: 0xff0000, // red
+      MAX_LEVEL: 3,
+      FIRE_RATE_MULT: [1, 0.75, 0.5], // multiplier per level
+      BULLET_COUNT: [1, 2, 3], // bullets per shot per level
+    },
+    SPEED_BOOST: {
+      COLOR: 0x0088ff, // blue
+      SPEED_MULT: 1.5,
+      DURATION: 8000, // ms
+    },
+  },
+
   // Screen and visual constants
   DISPLAY: {
     OFFSCREEN_BUFFER: 50, // pixels beyond screen before destroying
