@@ -127,17 +127,28 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
   collect(player) {
     const cfg = GameConfig.POWER_UP;
 
+    // Determine text and color based on type
+    let text, color;
     switch (this.type) {
       case PowerUpType.HEALTH:
         player.heal(cfg.HEALTH.RESTORE_AMOUNT);
+        text = `+${cfg.HEALTH.RESTORE_AMOUNT} HP`;
+        color = '#00ff00';
         break;
       case PowerUpType.WEAPON:
         player.upgradeWeapon();
+        text = 'WEAPON UP!';
+        color = '#ff6600';
         break;
       case PowerUpType.SPEED:
         player.applySpeedBoost(cfg.SPEED_BOOST.SPEED_MULT, cfg.SPEED_BOOST.DURATION);
+        text = 'SPEED BOOST!';
+        color = '#00aaff';
         break;
     }
+
+    // Show floating combat text
+    this.showFloatingText(text, color);
 
     // Visual feedback
     this.scene.tweens.add({
@@ -149,6 +160,45 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
       onComplete: () => {
         this.alpha = 1;
         this.deactivate();
+      }
+    });
+  }
+
+  /**
+   * Show WoW-style floating combat text that rises and fades
+   * @param {string} text - Text to display
+   * @param {string} color - Hex color string
+   */
+  showFloatingText(text, color) {
+    // Random x offset for variety
+    const xOffset = Phaser.Math.Between(-20, 20);
+
+    const floatingText = this.scene.add.text(
+      this.x + xOffset,
+      this.y,
+      text,
+      {
+        fontFamily: 'Arial Black, Arial',
+        fontSize: '24px',
+        fontStyle: 'bold',
+        color: color,
+        stroke: '#000000',
+        strokeThickness: 4,
+      }
+    );
+
+    floatingText.setOrigin(0.5);
+    floatingText.setDepth(1000);
+
+    // Float upward and fade out
+    this.scene.tweens.add({
+      targets: floatingText,
+      y: this.y - 60,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => {
+        floatingText.destroy();
       }
     });
   }
