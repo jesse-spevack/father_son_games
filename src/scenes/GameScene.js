@@ -326,4 +326,25 @@ export default class GameScene extends Phaser.Scene {
     explosion.play(key);
     explosion.once('animationcomplete', () => explosion.destroy());
   }
+
+  /**
+   * Clean up scene resources.
+   * Called automatically by Phaser when scene shuts down.
+   */
+  shutdown() {
+    // Clean up all managers to prevent memory leaks
+    if (this.bossManager) {
+      this.bossManager.destroy();
+    }
+    if (this.collisionManager) {
+      this.collisionManager.destroy();
+    }
+    if (this.uiManager) {
+      this.uiManager.destroy();
+    }
+
+    // Remove event listeners set up in setupBossEvents
+    this.events.off('bossSpawned');
+    this.events.off('bossDefeatedUI');
+  }
 }

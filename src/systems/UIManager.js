@@ -218,4 +218,34 @@ export default class UIManager {
       }
     });
   }
+
+  /**
+   * Clean up all UI elements.
+   * Should be called during scene shutdown.
+   */
+  destroy() {
+    // Destroy main UI elements
+    if (this.healthBarBg) this.healthBarBg.destroy();
+    if (this.healthBar) this.healthBar.destroy();
+    if (this.scoreText) this.scoreText.destroy();
+    if (this.waveText) this.waveText.destroy();
+
+    // Destroy lives icons
+    this.livesIcons.forEach(icon => icon.destroy());
+    this.livesIcons = [];
+
+    // Destroy boss UI elements
+    if (this.bossNameText) this.bossNameText.destroy();
+    if (this.bossHealthBarBg) this.bossHealthBarBg.destroy();
+    if (this.bossHealthBar) this.bossHealthBar.destroy();
+
+    // Clear references
+    this.healthBarBg = null;
+    this.healthBar = null;
+    this.scoreText = null;
+    this.waveText = null;
+    this.bossNameText = null;
+    this.bossHealthBarBg = null;
+    this.bossHealthBar = null;
+  }
 }

@@ -223,4 +223,15 @@ export default class CollisionManager {
       this.scene.player.makeInvincible(1000);
     }
   }
+
+  /**
+   * Clean up collision manager.
+   * Should be called during scene shutdown.
+   */
+  destroy() {
+    // Clear stored references
+    this.bullets = null;
+    this.player = null;
+    this.bossManager = null;
+  }
 }
