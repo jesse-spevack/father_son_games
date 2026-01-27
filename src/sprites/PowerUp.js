@@ -17,7 +17,7 @@ export const PowerUpType = {
 export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     // Use proton sprite as base (will be tinted)
-    super(scene, x, y, 'sprites', 'proton_1_01.png');
+    super(scene, x, y, 'sprites', 'proton_01.png');
 
     scene.add.existing(this);
     scene.physics.add.existing(this);

@@ -153,7 +153,9 @@ export default class CollisionManager {
    * @param {Player} player - The player
    */
   powerUpHitPlayer(powerUp, player) {
-    powerUp.collect(player);
+    if (powerUp?.collect) {
+      powerUp.collect(player);
+    }
   }
 
   /**

@@ -30,19 +30,12 @@ export default class GameScene extends Phaser.Scene {
       'background'
     );
 
-    // Create player group for automatic preUpdate calls
-    this.playerGroup = this.physics.add.group({
-      classType: Player,
-      runChildUpdate: true
-    });
-
     // Create player using Player class - positioned near bottom center
     this.player = new Player(
       this,
       this.cameras.main.centerX,
       this.cameras.main.height - 100
     );
-    this.playerGroup.add(this.player);
 
     // Create enemy bullet group with object pooling
     this.enemyBullets = this.physics.add.group({
@@ -274,19 +267,23 @@ export default class GameScene extends Phaser.Scene {
       this.startGame();
     }
 
-    // Handle shooting (spacebar or right-side touch)
-    // Player movement is handled automatically via runChildUpdate
-    if (this.player && this.gameState.gameStarted) {
-      const time = this.time.now;
+    // Update player (handles movement, tilt, etc.)
+    if (this.player) {
+      this.player.update();
 
-      // Keyboard shooting (spacebar)
-      if (this.fireKey.isDown) {
-        this.shoot(time);
-      }
+      // Handle shooting (spacebar or right-side touch)
+      if (this.gameState.gameStarted) {
+        const time = this.time.now;
 
-      // Touch shooting (right side of screen)
-      if (this.touchShooting && this.input.activePointer.isDown) {
-        this.shoot(time);
+        // Keyboard shooting (spacebar)
+        if (this.fireKey.isDown) {
+          this.shoot(time);
+        }
+
+        // Touch shooting (right side of screen)
+        if (this.touchShooting && this.input.activePointer.isDown) {
+          this.shoot(time);
+        }
       }
     }
 
