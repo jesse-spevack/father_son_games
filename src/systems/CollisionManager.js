@@ -110,7 +110,7 @@ export default class CollisionManager {
 
     // Damage enemy and add score if killed
     if (enemy.takeDamage(1)) {
-      this.scene.gameState.addScore(enemy.points);
+      this.scene.events.emit('addScore', enemy.points);
       this.trySpawnPowerUp(enemy.x, enemy.y);
     }
   }
@@ -162,12 +162,12 @@ export default class CollisionManager {
    * @param {EnemyBullet} bullet - The enemy bullet
    */
   enemyBulletHitPlayer(player, bullet) {
-    if (this.scene.player.isInvincible) return;
+    if (this.scene.player?.isInvincible) return;
 
     bullet.setActive(false);
     bullet.setVisible(false);
 
-    if (!this.scene.player.takeDamage(10)) {
+    if (!this.scene.player?.takeDamage(10)) {
       this.scene.loseLife();
     }
   }
@@ -178,12 +178,12 @@ export default class CollisionManager {
    * @param {Enemy} enemy - The enemy that collided
    */
   enemyHitPlayer(player, enemy) {
-    if (this.scene.player.isInvincible) return;
+    if (this.scene.player?.isInvincible) return;
 
     this.scene.playExplosion(enemy.x, enemy.y);
     enemy.destroy();
 
-    if (!this.scene.player.takeDamage(25)) {
+    if (!this.scene.player?.takeDamage(25)) {
       this.scene.loseLife();
     }
   }
@@ -195,7 +195,7 @@ export default class CollisionManager {
    * @param {Mine} mine - The mine that collided
    */
   mineHitPlayer(player, mine) {
-    if (this.scene.player.isInvincible) return;
+    if (this.scene.player?.isInvincible) return;
 
     // Mine explodes on direct contact
     mine.explode();
@@ -254,17 +254,17 @@ export default class CollisionManager {
     // Use instanceof for reliable type detection (survives minification)
     const boss = obj1 instanceof Boss ? obj1 : obj2;
 
-    if (this.scene.player.isInvincible) return;
-    if (boss.isDying) return;
+    if (this.scene.player?.isInvincible) return;
+    if (boss?.isDying) return;
 
     // Heavy collision damage
     const damage = GameConfig.BOSS.COLLISION_DAMAGE;
 
-    if (!this.scene.player.takeDamage(damage)) {
+    if (!this.scene.player?.takeDamage(damage)) {
       this.scene.loseLife();
     } else {
       // Brief invincibility after boss collision
-      this.scene.player.makeInvincible(1000);
+      this.scene.player?.makeInvincible(1000);
     }
   }
 

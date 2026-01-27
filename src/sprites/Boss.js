@@ -454,6 +454,10 @@ export default class Boss extends Phaser.GameObjects.Sprite {
       onYoyo: () => {
         if (!this.active || this.isDying) return;
 
+        // Re-check player exists (could have been destroyed since attack started)
+        const currentPlayer = this.scene?.player;
+        if (!currentPlayer?.active) return;
+
         for (let i = 0; i < this.aimedBulletCount; i++) {
           // Add slight spread for multiple bullets
           const spread = (i - (this.aimedBulletCount - 1) / 2) * 20;
@@ -467,7 +471,7 @@ export default class Boss extends Phaser.GameObjects.Sprite {
             // Calculate angle to player
             const angle = Phaser.Math.Angle.Between(
               this.x + spread, this.y + 30,
-              player.x, player.y
+              currentPlayer.x, currentPlayer.y
             );
 
             bullet.setVelocity(

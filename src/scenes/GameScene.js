@@ -30,12 +30,19 @@ export default class GameScene extends Phaser.Scene {
       'background'
     );
 
+    // Create player group for automatic preUpdate calls
+    this.playerGroup = this.physics.add.group({
+      classType: Player,
+      runChildUpdate: true
+    });
+
     // Create player using Player class - positioned near bottom center
     this.player = new Player(
       this,
       this.cameras.main.centerX,
       this.cameras.main.height - 100
     );
+    this.playerGroup.add(this.player);
 
     // Create enemy bullet group with object pooling
     this.enemyBullets = this.physics.add.group({
@@ -107,6 +114,26 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup boss event listeners
     this.setupBossEvents();
+
+    // Setup game event listeners for decoupled communication
+    this.setupGameEvents();
+  }
+
+  /**
+   * Setup event listeners for game state changes.
+   * Decouples managers from direct gameState access.
+   */
+  setupGameEvents() {
+    // Handle score changes from any source
+    this.events.on('addScore', (points) => {
+      this.gameState.addScore(points);
+    });
+
+    // Handle extra life awards
+    this.events.on('awardLife', () => {
+      this.gameState.lives++;
+      this.uiManager.updateLives(this.gameState.lives);
+    });
   }
 
   /**
@@ -247,23 +274,19 @@ export default class GameScene extends Phaser.Scene {
       this.startGame();
     }
 
-    // Update player (handles movement, tilt, etc.)
-    if (this.player) {
-      this.player.update();
+    // Handle shooting (spacebar or right-side touch)
+    // Player movement is handled automatically via runChildUpdate
+    if (this.player && this.gameState.gameStarted) {
+      const time = this.time.now;
 
-      // Handle shooting (spacebar or right-side touch)
-      if (this.gameState.gameStarted) {
-        const time = this.time.now;
+      // Keyboard shooting (spacebar)
+      if (this.fireKey.isDown) {
+        this.shoot(time);
+      }
 
-        // Keyboard shooting (spacebar)
-        if (this.fireKey.isDown) {
-          this.shoot(time);
-        }
-
-        // Touch shooting (right side of screen)
-        if (this.touchShooting && this.input.activePointer.isDown) {
-          this.shoot(time);
-        }
+      // Touch shooting (right side of screen)
+      if (this.touchShooting && this.input.activePointer.isDown) {
+        this.shoot(time);
       }
     }
 
@@ -379,5 +402,9 @@ export default class GameScene extends Phaser.Scene {
     // Remove event listeners set up in setupBossEvents
     this.events.off('bossSpawned');
     this.events.off('bossDefeatedUI');
+
+    // Remove event listeners set up in setupGameEvents
+    this.events.off('addScore');
+    this.events.off('awardLife');
   }
 }

@@ -62,9 +62,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   /**
    * Update player movement and visuals.
-   * Called from scene's update loop.
+   * Called automatically by Phaser via runChildUpdate.
+   * @param {number} time - Current game time
+   * @param {number} delta - Delta time since last frame
    */
-  update() {
+  preUpdate(time, delta) {
+    super.preUpdate(time, delta);
     // Handle keyboard input
     const keyboardVelocity = this.handleKeyboardInput();
 

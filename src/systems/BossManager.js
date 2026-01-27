@@ -150,13 +150,15 @@ export default class BossManager {
   onBossDefeated(boss) {
     console.log('Boss defeated!');
 
-    // Award points
-    this.scene.gameState.addScore(boss.points);
+    // Guard against null boss (edge case if destroyed unexpectedly)
+    if (!boss) return;
 
-    // Award extra life
+    // Award points via event
+    this.scene.events.emit('addScore', boss.points);
+
+    // Award extra life via event
     if (GameConfig.BOSS.REWARD_EXTRA_LIFE) {
-      this.scene.gameState.lives++;
-      this.scene.uiManager.updateLives(this.scene.gameState.lives);
+      this.scene.events.emit('awardLife');
       console.log('Extra life awarded!');
     }
 

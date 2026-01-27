@@ -77,8 +77,8 @@ export default class Mine extends Phaser.Physics.Arcade.Sprite {
     // Play explosion
     scene.playExplosion(this.x, this.y);
 
-    // Add score
-    scene.gameState.addScore(this.points);
+    // Add score via event
+    scene.events.emit('addScore', this.points);
 
     // Damage player if close enough and not invincible
     const player = scene.player;
