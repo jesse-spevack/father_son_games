@@ -44,11 +44,13 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.sprayCooldown = cfg.SPRAY_COOLDOWN;
     this.aimedCooldown = cfg.AIMED_COOLDOWN;
     this.summonCooldown = cfg.SUMMON_COOLDOWN;
+    this.ringCooldown = cfg.RING_COOLDOWN;
     this.phase3SpeedMult = cfg.PHASE_3_SPEED_MULT;
 
     this.lastSprayTime = 0;
     this.lastAimedTime = 0;
     this.lastSummonTime = 0;
+    this.lastRingTime = 0;
 
     // Attack parameters
     this.sprayBulletCount = cfg.SPRAY_BULLET_COUNT;
@@ -56,6 +58,8 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.sprayBulletSpeed = cfg.SPRAY_BULLET_SPEED;
     this.aimedBulletCount = cfg.AIMED_BULLET_COUNT;
     this.aimedBulletSpeed = cfg.AIMED_BULLET_SPEED;
+    this.ringBulletCount = cfg.RING_BULLET_COUNT;
+    this.ringBulletSpeed = cfg.RING_BULLET_SPEED;
     this.summonFighters = cfg.SUMMON_FIGHTERS;
     this.summonHeavies = cfg.SUMMON_HEAVIES;
 
@@ -387,6 +391,13 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     if (this.currentPhase >= 2 && time - this.lastSummonTime >= this.summonCooldown * cooldownMult) {
       this.summonAttack();
       this.lastSummonTime = time;
+      return;
+    }
+
+    // Ring attack (phase 3 only) - bullet hell!
+    if (this.currentPhase === 3 && time - this.lastRingTime >= this.ringCooldown * cooldownMult) {
+      this.ringAttack();
+      this.lastRingTime = time;
     }
   }
 
@@ -410,6 +421,9 @@ export default class Boss extends Phaser.GameObjects.Sprite {
 
         const angleStep = this.sprayAngle / (this.sprayBulletCount - 1);
         const startAngle = 90 - this.sprayAngle / 2; // 90 = straight down
+
+        // Screen shake on spray
+        this.scene.cameras.main.shake(100, 0.008);
 
         for (let i = 0; i < this.sprayBulletCount; i++) {
           const angle = startAngle + i * angleStep;
@@ -497,5 +511,56 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     const type = this.currentPhase === 3 ? 'heavy' : 'fighter';
 
     this.scene.events.emit('bossSummon', { count, type });
+  }
+
+  /**
+   * Fire bullets in a 360-degree ring pattern (phase 3 bullet hell)
+   */
+  ringAttack() {
+    this.isAttacking = true;
+    this.stopIdlePulse();
+
+    // Dramatic windup - boss glows and pulses
+    this.setTint(0xff00ff); // Purple glow
+
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.24,
+      scaleY: 0.24,
+      duration: 300,
+      yoyo: true,
+      onYoyo: () => {
+        if (!this.active || this.isDying) return;
+
+        // Big screen shake for ring attack
+        this.scene.cameras.main.shake(150, 0.012);
+
+        // Fire bullets in all directions
+        const angleStep = 360 / this.ringBulletCount;
+
+        for (let i = 0; i < this.ringBulletCount; i++) {
+          const angle = i * angleStep;
+          const radians = Phaser.Math.DegToRad(angle);
+
+          const bullet = this.bulletGroup.get(this.x, this.y);
+          if (bullet) {
+            bullet.setActive(true);
+            bullet.setVisible(true);
+            bullet.setPosition(this.x, this.y);
+            bullet.setVelocity(
+              Math.cos(radians) * this.ringBulletSpeed,
+              Math.sin(radians) * this.ringBulletSpeed
+            );
+          }
+        }
+      },
+      onComplete: () => {
+        this.isAttacking = false;
+        if (!this.isDying) {
+          this.setTint(this.phaseColors[this.currentPhase]);
+          this.resumeIdlePulse();
+        }
+      }
+    });
   }
 }

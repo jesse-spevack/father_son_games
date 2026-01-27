@@ -74,21 +74,26 @@ export default {
     PHASE_3_THRESHOLD: 0.33,
 
     // Attack cooldowns (ms)
-    SPRAY_COOLDOWN: 2500,
-    AIMED_COOLDOWN: 1800,
-    SUMMON_COOLDOWN: 6000,
+    SPRAY_COOLDOWN: 2000,
+    AIMED_COOLDOWN: 1500,
+    SUMMON_COOLDOWN: 5000,
 
     // Phase 3 speed multiplier (faster attacks)
-    PHASE_3_SPEED_MULT: 0.7,
+    PHASE_3_SPEED_MULT: 0.5,
 
     // Spray attack
-    SPRAY_BULLET_COUNT: 5,
-    SPRAY_ANGLE: 60, // degrees spread
-    SPRAY_BULLET_SPEED: 250,
+    SPRAY_BULLET_COUNT: 7,
+    SPRAY_ANGLE: 90, // degrees spread
+    SPRAY_BULLET_SPEED: 280,
 
     // Aimed attack
-    AIMED_BULLET_COUNT: 2,
-    AIMED_BULLET_SPEED: 300,
+    AIMED_BULLET_COUNT: 3,
+    AIMED_BULLET_SPEED: 320,
+
+    // Ring attack (phase 3 only)
+    RING_COOLDOWN: 3000,
+    RING_BULLET_COUNT: 12,
+    RING_BULLET_SPEED: 200,
 
     // Summon counts per phase
     SUMMON_FIGHTERS: 3,
