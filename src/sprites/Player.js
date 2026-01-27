@@ -32,6 +32,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.weaponLevel = 0; // 0 = base, 1-2 = upgraded
     this.speedBoostActive = false;
     this.speedBoostTimer = null;
+    this.shieldActive = false;
+    this.shieldTimer = null;
+    this.shieldGraphic = null;
 
     // Configure physics body
     this.setCollideWorldBounds(true);
@@ -84,6 +87,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Keep exhaust positioned behind player
     this.exhaust.x = this.x;
     this.exhaust.y = this.y + 35;
+
+    // Keep shield positioned on player
+    if (this.shieldGraphic) {
+      this.shieldGraphic.x = this.x;
+      this.shieldGraphic.y = this.y;
+    }
   }
 
   /**
@@ -318,5 +327,72 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.clearTint();
       console.log('Speed boost ended');
     });
+  }
+
+  /**
+   * Apply temporary shield (invincibility with visual bubble)
+   * @param {number} duration - Duration in ms
+   */
+  applyShield(duration) {
+    // Clear existing shield if any
+    if (this.shieldTimer) {
+      this.shieldTimer.remove();
+    }
+    if (this.shieldGraphic) {
+      this.shieldGraphic.destroy();
+    }
+
+    this.shieldActive = true;
+    this.isInvincible = true;
+    console.log('Shield activated!');
+
+    // Create shield bubble graphic
+    this.shieldGraphic = this.scene.add.circle(this.x, this.y, 40, 0xaa44ff, 0.3);
+    this.shieldGraphic.setStrokeStyle(3, 0xaa44ff, 0.8);
+    this.shieldGraphic.setDepth(this.depth - 1);
+
+    // Pulsing effect on shield
+    this.scene.tweens.add({
+      targets: this.shieldGraphic,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      alpha: 0.5,
+      duration: 400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // End shield after duration
+    this.shieldTimer = this.scene.time.delayedCall(duration, () => {
+      this.deactivateShield();
+    });
+  }
+
+  /**
+   * Remove shield effect
+   */
+  deactivateShield() {
+    this.shieldActive = false;
+    this.isInvincible = false;
+
+    if (this.shieldGraphic) {
+      // Fade out shield
+      this.scene.tweens.add({
+        targets: this.shieldGraphic,
+        alpha: 0,
+        scaleX: 1.5,
+        scaleY: 1.5,
+        duration: 300,
+        onComplete: () => {
+          if (this.shieldGraphic) {
+            this.shieldGraphic.destroy();
+            this.shieldGraphic = null;
+          }
+        }
+      });
+    }
+
+    console.log('Shield deactivated');
   }
 }

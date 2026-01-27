@@ -130,7 +130,7 @@ export default class CollisionManager {
     if (!powerUp) return;
 
     // Randomly select power-up type
-    const types = [PowerUpType.HEALTH, PowerUpType.WEAPON, PowerUpType.SPEED];
+    const types = [PowerUpType.HEALTH, PowerUpType.WEAPON, PowerUpType.SPEED, PowerUpType.SHIELD];
     const type = Phaser.Math.RND.pick(types);
 
     powerUp.spawn(x, y, type);

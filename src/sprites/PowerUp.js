@@ -8,6 +8,7 @@ export const PowerUpType = {
   HEALTH: 'health',
   WEAPON: 'weapon',
   SPEED: 'speed',
+  SHIELD: 'shield',
 };
 
 /**
@@ -56,6 +57,9 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
         break;
       case PowerUpType.SPEED:
         this.setTint(cfg.SPEED_BOOST.COLOR);
+        break;
+      case PowerUpType.SHIELD:
+        this.setTint(cfg.SHIELD.COLOR);
         break;
     }
 
@@ -148,6 +152,11 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
         player.applySpeedBoost(cfg.SPEED_BOOST.SPEED_MULT, cfg.SPEED_BOOST.DURATION);
         text = 'SPEED BOOST!';
         color = '#00aaff';
+        break;
+      case PowerUpType.SHIELD:
+        player.applyShield(cfg.SHIELD.DURATION);
+        text = 'SHIELD!';
+        color = '#aa44ff';
         break;
     }
 

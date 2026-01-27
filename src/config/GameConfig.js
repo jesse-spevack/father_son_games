@@ -142,6 +142,10 @@ export default {
       SPEED_MULT: 1.5,
       DURATION: 8000, // ms
     },
+    SHIELD: {
+      COLOR: 0xaa44ff, // purple
+      DURATION: 4000, // ms
+    },
   },
 
   // Screen and visual constants
