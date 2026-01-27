@@ -1,4 +1,6 @@
 import GameConfig from '../config/GameConfig.js';
+import Bullet from '../sprites/Bullet.js';
+import Boss from '../sprites/Boss.js';
 
 /**
  * CollisionManager - Handles all collision detection and response in the game.
@@ -186,9 +188,9 @@ export default class CollisionManager {
    * @param {Boss} boss - The boss that was hit
    */
   bulletHitBoss(obj1, obj2) {
-    // Phaser may pass objects in either order - figure out which is which
-    const bullet = obj1.constructor.name === 'Bullet' ? obj1 : obj2;
-    const boss = obj1.constructor.name === 'Bullet' ? obj2 : obj1;
+    // Use instanceof for reliable type detection (survives minification)
+    const bullet = obj1 instanceof Bullet ? obj1 : obj2;
+    const boss = obj1 instanceof Boss ? obj1 : obj2;
 
     bullet.setActive(false);
     bullet.setVisible(false);
@@ -205,8 +207,8 @@ export default class CollisionManager {
    * @param {Object} obj2 - Second collision object
    */
   bossHitPlayer(obj1, obj2) {
-    // Figure out which is boss and which is player
-    const boss = obj1.maxHealth ? obj1 : obj2;
+    // Use instanceof for reliable type detection (survives minification)
+    const boss = obj1 instanceof Boss ? obj1 : obj2;
 
     if (this.scene.player.isInvincible) return;
     if (boss.isDying) return;
