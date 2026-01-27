@@ -149,13 +149,13 @@ export default class CollisionManager {
 
   /**
    * Handle player collecting a power-up.
-   * @param {PowerUp} powerUp - The power-up collected
-   * @param {Player} player - The player
+   * Note: Phaser passes params as (sprite, groupMember) for overlap(group, sprite)
    */
-  powerUpHitPlayer(powerUp, player) {
-    if (powerUp?.collect) {
-      powerUp.collect(player);
-    }
+  powerUpHitPlayer(obj1, obj2) {
+    // Determine which is the powerUp (has collect method)
+    const powerUp = obj1.collect ? obj1 : obj2;
+    const player = obj1.collect ? obj2 : obj1;
+    powerUp.collect(player);
   }
 
   /**
