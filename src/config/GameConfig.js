@@ -55,7 +55,7 @@ export default {
 
   BOSS: {
     // Core stats
-    MAX_HEALTH: 100,
+    MAX_HEALTH: 300,
     POINTS: 5000,
     COLLISION_DAMAGE: 50, // damage to player on body collision
 
