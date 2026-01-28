@@ -3,18 +3,43 @@ import GameConfig from '../config/GameConfig.js';
 
 /**
  * Enemy ship class - extends Phaser physics sprite
- * Supports two enemy types with color variants and tilt animation
+ * Types are defined in GameConfig.ENEMY.TYPES
  */
 export default class Enemy extends Phaser.Physics.Arcade.Sprite {
+  /**
+   * Get config for an enemy type
+   * @param {string} type - Enemy type key
+   * @returns {Object} Type config
+   */
+  static getTypeConfig(type) {
+    return GameConfig.ENEMY.TYPES[type];
+  }
+
+  /**
+   * Get all available enemy type keys
+   * @returns {string[]} Array of type keys
+   */
+  static getTypeKeys() {
+    return Object.keys(GameConfig.ENEMY.TYPES);
+  }
+
   /**
    * @param {Phaser.Scene} scene - The scene this enemy belongs to
    * @param {number} x - Initial x position
    * @param {number} y - Initial y position
-   * @param {number} type - Enemy type: 1 (fighter) or 2 (heavy)
+   * @param {string} type - Enemy type key from config (e.g., 'fighter', 'heavy')
    * @param {string} color - Color variant: 'r' (red), 'g' (green), or 'b' (blue)
    */
-  constructor(scene, x, y, type = 1, color = 'r') {
-    const frame = `enemy_${type}_${color}_m.png`;
+  constructor(scene, x, y, type = 'fighter', color = 'r') {
+    // Get type config
+    const typeConfig = Enemy.getTypeConfig(type);
+    if (!typeConfig) {
+      console.warn(`Unknown enemy type: ${type}, defaulting to fighter`);
+      type = 'fighter';
+    }
+    const config = typeConfig || GameConfig.ENEMY.TYPES.fighter;
+
+    const frame = `enemy_${config.frameId}_${color}_m.png`;
     super(scene, x, y, 'sprites', frame);
 
     // Add to scene and enable physics
@@ -23,16 +48,14 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     // Store enemy properties
     this.enemyType = type;
+    this.frameId = config.frameId;
     this.color = color;
 
     // Type-specific stats from config
-    // Type 1 (fighter): fast, weak, low points, shoots less often
-    // Type 2 (heavy): slow, tough, high points, shoots more often
-    const stats = type === 1 ? GameConfig.ENEMY.FIGHTER : GameConfig.ENEMY.HEAVY;
-    this.health = stats.HEALTH;
-    this.speed = stats.SPEED;
-    this.points = stats.POINTS;
-    this.fireRate = stats.FIRE_RATE;
+    this.health = config.health;
+    this.speed = config.speed;
+    this.points = config.points;
+    this.fireRate = config.fireRate;
 
     // Shooting state - randomize initial delay so enemies don't all shoot at once
     this.lastFired = -Phaser.Math.Between(0, this.fireRate);
@@ -67,7 +90,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     // Only update frame if tilt changed
     if (newTilt !== this.currentTilt) {
       this.currentTilt = newTilt;
-      this.setFrame(`enemy_${this.enemyType}_${this.color}_${newTilt}.png`);
+      this.setFrame(`enemy_${this.frameId}_${this.color}_${newTilt}.png`);
     }
   }
 

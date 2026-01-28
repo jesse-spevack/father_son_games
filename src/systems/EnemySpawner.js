@@ -1,4 +1,5 @@
 import Enemy from '../sprites/Enemy.js';
+import GameConfig from '../config/GameConfig.js';
 
 /**
  * Manages enemy spawning and formations
@@ -25,9 +26,9 @@ export default class EnemySpawner {
     this.minSpawnInterval = 1000;
     this.maxSpawnInterval = 3000;
 
-    // Available colors and types
+    // Available colors and types (types from config registry)
     this.colors = ['r', 'g', 'b'];
-    this.types = [1, 2];
+    this.types = Enemy.getTypeKeys();
 
     // Formation spacing
     this.shipSpacing = 50;
@@ -53,12 +54,13 @@ export default class EnemySpawner {
   }
 
   /**
-   * Get a random enemy type (weighted towards type 1)
-   * @returns {number} Enemy type (1 or 2)
+   * Get a random enemy type (weighted towards fighter)
+   * @returns {string} Enemy type key from config
    */
   getRandomType() {
-    // 70% chance of type 1 (fighter), 30% chance of type 2 (heavy)
-    return Math.random() < 0.7 ? 1 : 2;
+    // Use spawn weight from config (70% fighter, 30% heavy)
+    const weight = GameConfig.SPAWNER.FIGHTER_SPAWN_WEIGHT;
+    return Math.random() < weight ? 'fighter' : 'heavy';
   }
 
   /**

@@ -23,21 +23,28 @@ export default {
   },
 
   ENEMY: {
-    FIGHTER: {
-      HEALTH: 1,
-      SPEED: 150,
-      POINTS: 100,
-      FIRE_RATE: 2000, // ms between shots
-    },
-    HEAVY: {
-      HEALTH: 3,
-      SPEED: 80,
-      POINTS: 250,
-      FIRE_RATE: 1500, // ms between shots
-    },
     // Tilt thresholds for visual feedback
     TILT_THRESHOLD_LOW: 30,
     TILT_THRESHOLD_HIGH: 100,
+
+    // Enemy type registry - add new types here
+    // frameId corresponds to sprite atlas naming: enemy_{frameId}_{color}_{tilt}.png
+    TYPES: {
+      fighter: {
+        frameId: '1',
+        health: 1,
+        speed: 150,
+        points: 100,
+        fireRate: 2000,
+      },
+      heavy: {
+        frameId: '2',
+        health: 3,
+        speed: 80,
+        points: 250,
+        fireRate: 1500,
+      },
+    },
   },
 
   MINE: {
