@@ -111,6 +111,7 @@ export default class CollisionManager {
     // Damage enemy and add score if killed
     if (enemy.takeDamage(1)) {
       this.scene.events.emit('addScore', enemy.points);
+      this.scene.events.emit('enemyKilled');
       this.trySpawnPowerUp(enemy.x, enemy.y);
     }
   }

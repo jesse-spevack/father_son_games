@@ -20,6 +20,10 @@ export default class GameState {
     this.gameStarted = false;
     this.difficultyTimer = 0;
     this.mineSpawnTimer = 0;
+    // Stats for leaderboard
+    this.enemiesKilled = 0;
+    this.timeSurvived = 0; // in seconds
+    this.gameStartTime = 0;
   }
 
   /**
@@ -39,5 +43,43 @@ export default class GameState {
   loseLife() {
     this.lives--;
     return this.lives;
+  }
+
+  /**
+   * Record an enemy kill.
+   */
+  recordKill() {
+    this.enemiesKilled++;
+  }
+
+  /**
+   * Start tracking game time.
+   * @param {number} time - Current game time in ms
+   */
+  startTimer(time) {
+    this.gameStartTime = time;
+  }
+
+  /**
+   * Update the time survived.
+   * @param {number} time - Current game time in ms
+   */
+  updateTime(time) {
+    if (this.gameStartTime > 0) {
+      this.timeSurvived = Math.floor((time - this.gameStartTime) / 1000);
+    }
+  }
+
+  /**
+   * Get stats for leaderboard submission.
+   * @returns {Object} Stats object
+   */
+  getStats() {
+    return {
+      score: this.score,
+      wave: this.difficulty,
+      enemiesKilled: this.enemiesKilled,
+      timeSurvived: this.timeSurvived,
+    };
   }
 }

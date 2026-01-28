@@ -134,6 +134,11 @@ export default class GameScene extends Phaser.Scene {
       this.gameState.lives++;
       this.uiManager.updateLives(this.gameState.lives);
     });
+
+    // Handle enemy kills for leaderboard stats
+    this.events.on('enemyKilled', () => {
+      this.gameState.recordKill();
+    });
   }
 
   /**
@@ -261,6 +266,7 @@ export default class GameScene extends Phaser.Scene {
 
   startGame() {
     this.gameState.gameStarted = true;
+    this.gameState.startTimer(this.time.now);
     this.titleText.setVisible(false);
     console.log('Game started! Player can now move freely.');
   }
@@ -323,6 +329,11 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
+    // Update game time for leaderboard
+    if (this.gameState.gameStarted) {
+      this.gameState.updateTime(this.time.now);
+    }
+
     // Update UI
     this.uiManager.update({
       healthPercent: this.player.getHealthPercent(),
@@ -331,7 +342,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   gameOver() {
-    this.scene.start('GameOverScene', { score: this.gameState.score });
+    this.scene.start('GameOverScene', this.gameState.getStats());
   }
 
   /**
@@ -406,5 +417,6 @@ export default class GameScene extends Phaser.Scene {
     // Remove event listeners set up in setupGameEvents
     this.events.off('addScore');
     this.events.off('awardLife');
+    this.events.off('enemyKilled');
   }
 }
