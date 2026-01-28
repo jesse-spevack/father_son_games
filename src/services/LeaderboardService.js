@@ -1,12 +1,12 @@
 import { database } from './firebase.js';
-import { ref, push, query, orderByChild, limitToLast, get, onValue } from 'firebase/database';
 
 /**
  * LeaderboardService - Handles all leaderboard operations with Firebase.
+ * Uses Firebase compat SDK (CDN version).
  */
 export default class LeaderboardService {
   constructor() {
-    this.leaderboardRef = ref(database, 'leaderboard');
+    this.leaderboardRef = database.ref('leaderboard');
     this.maxEntries = 10;
     this.listeners = [];
   }
@@ -36,7 +36,7 @@ export default class LeaderboardService {
       const qualifies = await this.checkIfQualifies(entry.score);
 
       if (qualifies) {
-        await push(this.leaderboardRef, scoreData);
+        await this.leaderboardRef.push(scoreData);
         return true;
       }
 
@@ -77,15 +77,12 @@ export default class LeaderboardService {
    */
   async getTopScores() {
     try {
-      const scoresQuery = query(
-        this.leaderboardRef,
-        orderByChild('score'),
-        limitToLast(this.maxEntries)
-      );
+      const snapshot = await this.leaderboardRef
+        .orderByChild('score')
+        .limitToLast(this.maxEntries)
+        .once('value');
 
-      const snapshot = await get(scoresQuery);
       const scores = [];
-
       snapshot.forEach((child) => {
         scores.push({
           id: child.key,
@@ -107,13 +104,11 @@ export default class LeaderboardService {
    * @returns {Function} Unsubscribe function
    */
   subscribeToScores(callback) {
-    const scoresQuery = query(
-      this.leaderboardRef,
-      orderByChild('score'),
-      limitToLast(this.maxEntries)
-    );
+    const query = this.leaderboardRef
+      .orderByChild('score')
+      .limitToLast(this.maxEntries);
 
-    const unsubscribe = onValue(scoresQuery, (snapshot) => {
+    const handler = (snapshot) => {
       const scores = [];
       snapshot.forEach((child) => {
         scores.push({
@@ -124,8 +119,11 @@ export default class LeaderboardService {
 
       // Sort by score descending
       callback(scores.sort((a, b) => b.score - a.score));
-    });
+    };
 
+    query.on('value', handler);
+
+    const unsubscribe = () => query.off('value', handler);
     this.listeners.push(unsubscribe);
     return unsubscribe;
   }
