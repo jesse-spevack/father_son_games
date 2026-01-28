@@ -1,7 +1,6 @@
 import GameConfig from '../config/GameConfig.js';
 import Bullet from '../sprites/Bullet.js';
 import Boss from '../sprites/Boss.js';
-import { PowerUpType } from '../sprites/PowerUp.js';
 
 /**
  * CollisionManager - Handles all collision detection and response in the game.
@@ -130,8 +129,8 @@ export default class CollisionManager {
     const powerUp = this.scene.powerUps.get(x, y);
     if (!powerUp) return;
 
-    // Randomly select power-up type
-    const types = [PowerUpType.HEALTH, PowerUpType.WEAPON, PowerUpType.SPEED, PowerUpType.SHIELD];
+    // Randomly select power-up type from registry
+    const types = Object.keys(GameConfig.POWER_UP.TYPES);
     const type = Phaser.Math.RND.pick(types);
 
     powerUp.spawn(x, y, type);

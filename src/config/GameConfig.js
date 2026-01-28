@@ -126,25 +126,37 @@ export default {
     LIFETIME: 10000, // ms before disappearing
     POOL_SIZE: 10,
 
-    // Types and their effects
-    HEALTH: {
-      COLOR: 0x00ff00, // green
-      RESTORE_AMOUNT: 25,
-    },
-    WEAPON: {
-      COLOR: 0xff0000, // red
-      MAX_LEVEL: 3,
-      FIRE_RATE_MULT: [1, 0.75, 0.5], // multiplier per level
-      BULLET_COUNT: [1, 2, 3], // bullets per shot per level
-    },
-    SPEED_BOOST: {
-      COLOR: 0x0088ff, // blue
-      SPEED_MULT: 1.5,
-      DURATION: 8000, // ms
-    },
-    SHIELD: {
-      COLOR: 0xaa44ff, // purple
-      DURATION: 4000, // ms
+    // Weapon upgrade settings (used by player)
+    WEAPON_MAX_LEVEL: 3,
+    WEAPON_FIRE_RATE_MULT: [1, 0.75, 0.5],
+    WEAPON_BULLET_COUNT: [1, 2, 3],
+
+    // Power-up type registry - add new types here
+    TYPES: {
+      health: {
+        color: 0x00ff00,
+        text: '+25 HP',
+        textColor: '#00ff00',
+        healAmount: 25,
+      },
+      weapon: {
+        color: 0xff6600,
+        text: 'WEAPON UP!',
+        textColor: '#ff6600',
+      },
+      speed: {
+        color: 0x00aaff,
+        text: 'SPEED BOOST!',
+        textColor: '#00aaff',
+        speedMult: 1.5,
+        duration: 8000,
+      },
+      shield: {
+        color: 0xaa44ff,
+        text: 'SHIELD!',
+        textColor: '#aa44ff',
+        duration: 4000,
+      },
     },
   },
 

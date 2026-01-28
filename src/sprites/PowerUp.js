@@ -2,18 +2,16 @@ import Phaser from 'phaser';
 import GameConfig from '../config/GameConfig.js';
 
 /**
- * Power-up types
+ * Power-up types - generated from config for backwards compatibility
  */
-export const PowerUpType = {
-  HEALTH: 'health',
-  WEAPON: 'weapon',
-  SPEED: 'speed',
-  SHIELD: 'shield',
-};
+export const PowerUpType = Object.keys(GameConfig.POWER_UP.TYPES).reduce((acc, key) => {
+  acc[key.toUpperCase()] = key;
+  return acc;
+}, {});
 
 /**
  * PowerUp - Collectible items dropped by enemies.
- * Types: health (green), weapon upgrade (red), speed boost (blue)
+ * Types are defined in GameConfig.POWER_UP.TYPES
  */
 export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
@@ -33,10 +31,27 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
+   * Get config for a power-up type
+   * @param {string} type - Power-up type key
+   * @returns {Object} Type config
+   */
+  static getTypeConfig(type) {
+    return GameConfig.POWER_UP.TYPES[type];
+  }
+
+  /**
+   * Get all available power-up type keys
+   * @returns {string[]} Array of type keys
+   */
+  static getTypeKeys() {
+    return Object.keys(GameConfig.POWER_UP.TYPES);
+  }
+
+  /**
    * Activate the power-up with a specific type
    * @param {number} x - X position
    * @param {number} y - Y position
-   * @param {string} type - PowerUpType value
+   * @param {string} type - Power-up type key from config
    */
   spawn(x, y, type) {
     this.setPosition(x, y);
@@ -46,25 +61,14 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
     this.type = type;
     this.spawnTime = this.scene.time.now;
 
-    // Set color based on type
-    const cfg = GameConfig.POWER_UP;
-    switch (type) {
-      case PowerUpType.HEALTH:
-        this.setTint(cfg.HEALTH.COLOR);
-        break;
-      case PowerUpType.WEAPON:
-        this.setTint(cfg.WEAPON.COLOR);
-        break;
-      case PowerUpType.SPEED:
-        this.setTint(cfg.SPEED_BOOST.COLOR);
-        break;
-      case PowerUpType.SHIELD:
-        this.setTint(cfg.SHIELD.COLOR);
-        break;
+    // Get type config and set color
+    const typeConfig = PowerUp.getTypeConfig(type);
+    if (typeConfig) {
+      this.setTint(typeConfig.color);
     }
 
     // Set downward velocity
-    this.setVelocityY(cfg.SPEED);
+    this.setVelocityY(GameConfig.POWER_UP.SPEED);
 
     // Pulsing effect
     this.scene.tweens.add({
@@ -133,35 +137,15 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
     if (!this.active) return;
     this.setActive(false);
 
-    const cfg = GameConfig.POWER_UP;
+    // Get type config
+    const typeConfig = PowerUp.getTypeConfig(this.type);
+    if (!typeConfig) return;
 
-    // Determine text and color based on type
-    let text, color;
-    switch (this.type) {
-      case PowerUpType.HEALTH:
-        player.heal(cfg.HEALTH.RESTORE_AMOUNT);
-        text = `+${cfg.HEALTH.RESTORE_AMOUNT} HP`;
-        color = '#00ff00';
-        break;
-      case PowerUpType.WEAPON:
-        player.upgradeWeapon();
-        text = 'WEAPON UP!';
-        color = '#ff6600';
-        break;
-      case PowerUpType.SPEED:
-        player.applySpeedBoost(cfg.SPEED_BOOST.SPEED_MULT, cfg.SPEED_BOOST.DURATION);
-        text = 'SPEED BOOST!';
-        color = '#00aaff';
-        break;
-      case PowerUpType.SHIELD:
-        player.applyShield(cfg.SHIELD.DURATION);
-        text = 'SHIELD!';
-        color = '#aa44ff';
-        break;
-    }
+    // Apply effect based on type
+    this.applyEffect(player, this.type, typeConfig);
 
     // Show floating combat text
-    this.showFloatingText(text, color);
+    this.showFloatingText(typeConfig.text, typeConfig.textColor);
 
     // Visual feedback
     this.scene.tweens.add({
@@ -175,6 +159,31 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
         this.deactivate();
       }
     });
+  }
+
+  /**
+   * Apply the power-up effect to the player
+   * @param {Player} player
+   * @param {string} type - Power-up type
+   * @param {Object} config - Type config
+   */
+  applyEffect(player, type, config) {
+    switch (type) {
+      case 'health':
+        player.heal(config.healAmount);
+        break;
+      case 'weapon':
+        player.upgradeWeapon();
+        break;
+      case 'speed':
+        player.applySpeedBoost(config.speedMult, config.duration);
+        break;
+      case 'shield':
+        player.applyShield(config.duration);
+        break;
+      default:
+        console.warn(`Unknown power-up type: ${type}`);
+    }
   }
 
   /**

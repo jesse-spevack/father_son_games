@@ -268,7 +268,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * Upgrade weapon to next level (max 2)
    */
   upgradeWeapon() {
-    const maxLevel = GameConfig.POWER_UP.WEAPON.MAX_LEVEL - 1;
+    const maxLevel = GameConfig.POWER_UP.WEAPON_MAX_LEVEL - 1;
     if (this.weaponLevel < maxLevel) {
       this.weaponLevel++;
       console.log(`Weapon upgraded to level ${this.weaponLevel + 1}!`);
@@ -290,7 +290,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    */
   getFireRate() {
     const baserate = GameConfig.PLAYER.FIRE_RATE;
-    const mult = GameConfig.POWER_UP.WEAPON.FIRE_RATE_MULT[this.weaponLevel];
+    const mult = GameConfig.POWER_UP.WEAPON_FIRE_RATE_MULT[this.weaponLevel];
     return baserate * mult;
   }
 
@@ -299,7 +299,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * @returns {number} Bullet count
    */
   getBulletCount() {
-    return GameConfig.POWER_UP.WEAPON.BULLET_COUNT[this.weaponLevel];
+    return GameConfig.POWER_UP.WEAPON_BULLET_COUNT[this.weaponLevel];
   }
 
   /**
