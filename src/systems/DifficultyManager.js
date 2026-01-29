@@ -39,12 +39,25 @@ export default class DifficultyManager {
   }
 
   /**
+   * Set the enemy spawner reference for difficulty adjustments.
+   * @param {EnemySpawner} spawner
+   */
+  setSpawner(spawner) {
+    this.spawner = spawner;
+  }
+
+  /**
    * Update the difficulty manager. Call this each frame.
    * @param {number} delta - Time elapsed since last frame in ms
    * @param {EnemySpawner} enemySpawner - The enemy spawner to adjust on difficulty increase
    * @returns {boolean} True if difficulty was increased this frame
    */
   update(delta, enemySpawner) {
+    // Store spawner reference for forceLevelUp
+    if (enemySpawner && !this.spawner) {
+      this.spawner = enemySpawner;
+    }
+
     this.difficultyTimer += delta;
 
     if (this.difficultyTimer >= this.difficultyInterval) {
@@ -54,6 +67,21 @@ export default class DifficultyManager {
     }
 
     return false;
+  }
+
+  /**
+   * Force an immediate difficulty level increase.
+   * Used by dev console for testing.
+   */
+  forceLevelUp() {
+    if (this.spawner) {
+      this.increaseDifficulty(this.spawner);
+    } else {
+      // Just increment without spawner adjustments
+      this.difficulty++;
+      console.log('Difficulty increased to', this.difficulty, '(no spawner)');
+    }
+    this.difficultyTimer = 0;
   }
 
   /**

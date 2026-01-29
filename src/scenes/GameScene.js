@@ -12,6 +12,7 @@ import GameState from '../systems/GameState.js';
 import UIManager from '../systems/UIManager.js';
 import VisualEffectsManager from '../systems/VisualEffectsManager.js';
 import PoolManager from '../systems/PoolManager.js';
+import DevConsole from '../systems/DevConsole.js';
 import GameConfig from '../config/GameConfig.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -111,6 +112,9 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup game event listeners for decoupled communication
     this.setupGameEvents();
+
+    // Initialize dev console (only active in dev mode)
+    this.devConsole = new DevConsole(this);
   }
 
   /**
@@ -395,6 +399,11 @@ export default class GameScene extends Phaser.Scene {
       healthPercent: this.player.getHealthPercent(),
       score: this.gameState.score
     });
+
+    // Update dev console (if enabled)
+    if (this.devConsole) {
+      this.devConsole.update();
+    }
   }
 
   gameOver() {
@@ -467,6 +476,9 @@ export default class GameScene extends Phaser.Scene {
     }
     if (this.pools) {
       this.pools.destroy();
+    }
+    if (this.devConsole) {
+      this.devConsole.destroy();
     }
 
     // Remove event listeners set up in setupBossEvents
