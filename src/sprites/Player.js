@@ -28,8 +28,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.maxHealth = GameConfig.PLAYER.MAX_HEALTH;
     this.isInvincible = false;
 
-    // Power-up state
+    // Weapon state (RPG-ready)
+    this.weaponType = GameConfig.DEFAULT_WEAPON || 'vulcan';
     this.weaponLevel = 0; // 0 = base, 1-2 = upgraded
+
+    // Power-up state
     this.speedBoostActive = false;
     this.speedBoostTimer = null;
     this.shieldActive = false;
@@ -260,18 +263,37 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   respawn(x, y) {
     this.setPosition(x, y);
     this.health = this.maxHealth;
-    this.weaponLevel = 0; // Reset weapon on death
+    this.weaponLevel = 0; // Reset weapon level on death (keep weapon type)
     this.makeInvincible();
   }
 
   /**
-   * Upgrade weapon to next level (max 2)
+   * Get the current weapon configuration
+   * @returns {Object} Weapon config from registry
+   */
+  getWeaponConfig() {
+    return GameConfig.WEAPONS[this.weaponType];
+  }
+
+  /**
+   * Get the current weapon level configuration
+   * @returns {Object} Level config with pattern, bulletCount, spread, etc.
+   */
+  getWeaponLevelConfig() {
+    const weapon = this.getWeaponConfig();
+    return weapon.levels[this.weaponLevel];
+  }
+
+  /**
+   * Upgrade weapon to next level (max defined by weapon type)
    */
   upgradeWeapon() {
-    const maxLevel = GameConfig.POWER_UP.WEAPON_MAX_LEVEL - 1;
+    const weapon = this.getWeaponConfig();
+    const maxLevel = weapon.levels.length - 1;
+
     if (this.weaponLevel < maxLevel) {
       this.weaponLevel++;
-      console.log(`Weapon upgraded to level ${this.weaponLevel + 1}!`);
+      console.log(`${weapon.name} upgraded to level ${this.weaponLevel + 1}!`);
 
       // Visual feedback
       this.scene.tweens.add({
@@ -285,13 +307,42 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
-   * Get current fire rate based on weapon level
+   * Switch to a different weapon type
+   * @param {string} weaponType - Weapon type key from WEAPONS config
+   * @param {boolean} [resetLevel=true] - Whether to reset level to 0
+   */
+  switchWeapon(weaponType, resetLevel = true) {
+    if (!GameConfig.WEAPONS[weaponType]) {
+      console.warn(`Unknown weapon type: ${weaponType}`);
+      return;
+    }
+
+    this.weaponType = weaponType;
+    if (resetLevel) {
+      this.weaponLevel = 0;
+    }
+
+    const weapon = this.getWeaponConfig();
+    console.log(`Switched to ${weapon.name}!`);
+
+    // Visual feedback
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 1.3,
+      scaleY: 1.3,
+      duration: 150,
+      yoyo: true
+    });
+  }
+
+  /**
+   * Get current fire rate based on weapon type and level
    * @returns {number} Fire rate in ms
    */
   getFireRate() {
-    const baserate = GameConfig.PLAYER.FIRE_RATE;
-    const mult = GameConfig.POWER_UP.WEAPON_FIRE_RATE_MULT[this.weaponLevel];
-    return baserate * mult;
+    const weapon = this.getWeaponConfig();
+    const level = this.getWeaponLevelConfig();
+    return weapon.baseFireRate * level.fireRateMult;
   }
 
   /**
@@ -299,7 +350,23 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * @returns {number} Bullet count
    */
   getBulletCount() {
-    return GameConfig.POWER_UP.WEAPON_BULLET_COUNT[this.weaponLevel];
+    return this.getWeaponLevelConfig().bulletCount;
+  }
+
+  /**
+   * Get the projectile type for current weapon
+   * @returns {string} Projectile type key
+   */
+  getProjectileType() {
+    return this.getWeaponConfig().projectile;
+  }
+
+  /**
+   * Get all available weapon type keys
+   * @returns {string[]} Array of weapon type keys
+   */
+  static getWeaponTypes() {
+    return Object.keys(GameConfig.WEAPONS);
   }
 
   /**

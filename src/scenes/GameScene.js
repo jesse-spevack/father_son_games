@@ -179,46 +179,96 @@ export default class GameScene extends Phaser.Scene {
 
   /**
    * Fire bullets from the player position.
-   * Uses player's weapon level for fire rate and bullet count.
+   * Uses weapon config for fire rate, pattern, and bullet count.
    * @param {number} time - Current game time in milliseconds
    */
   shoot(time) {
-    // Check fire rate (use player's upgraded fire rate)
+    // Check fire rate (use player's weapon fire rate)
     const fireRate = this.player.getFireRate();
     if (time < this.lastFired + fireRate) {
       return;
     }
 
-    const bulletCount = this.player.getBulletCount();
+    const levelConfig = this.player.getWeaponLevelConfig();
     const playerX = this.player.x;
     const playerY = this.player.y - 20;
 
-    // Fire based on bullet count (1, 2, or 3 bullets)
-    if (bulletCount === 1) {
-      // Single bullet - straight ahead
-      const bullet = this.bullets.get(playerX, playerY);
-      if (bullet) {
-        bullet.fire(playerX, playerY);
-      }
-    } else if (bulletCount === 2) {
-      // Double spread - two bullets at slight angles
-      const spread = 15; // pixels offset
-      const bullet1 = this.bullets.get(playerX - spread, playerY);
-      const bullet2 = this.bullets.get(playerX + spread, playerY);
-      if (bullet1) bullet1.fire(playerX - spread, playerY, -0.1);
-      if (bullet2) bullet2.fire(playerX + spread, playerY, 0.1);
-    } else if (bulletCount >= 3) {
-      // Triple spread - center + two angled
-      const spread = 20;
-      const bullet1 = this.bullets.get(playerX, playerY);
-      const bullet2 = this.bullets.get(playerX - spread, playerY);
-      const bullet3 = this.bullets.get(playerX + spread, playerY);
-      if (bullet1) bullet1.fire(playerX, playerY, 0);
-      if (bullet2) bullet2.fire(playerX - spread, playerY, -0.15);
-      if (bullet3) bullet3.fire(playerX + spread, playerY, 0.15);
+    // Fire based on weapon pattern
+    this.firePattern(levelConfig, playerX, playerY);
+    this.lastFired = time;
+  }
+
+  /**
+   * Execute a fire pattern based on weapon level config.
+   * @param {Object} config - Weapon level configuration
+   * @param {number} x - Player X position
+   * @param {number} y - Player Y position
+   */
+  firePattern(config, x, y) {
+    const { pattern, bulletCount, spread = 0, spreadAngle = 0.1 } = config;
+
+    switch (pattern) {
+      case 'single':
+        // Single bullet straight ahead
+        this.fireBullet(x, y, 0);
+        break;
+
+      case 'dual':
+        // Two parallel bullets
+        this.fireBullet(x - spread, y, 0);
+        this.fireBullet(x + spread, y, 0);
+        break;
+
+      case 'spread':
+        // Fan pattern - bullets spread outward
+        this.fireSpread(x, y, bulletCount, spreadAngle);
+        break;
+
+      case 'burst':
+        // Rapid burst (handled separately with timing)
+        this.fireBullet(x, y, 0);
+        break;
+
+      default:
+        // Fallback to single
+        this.fireBullet(x, y, 0);
+    }
+  }
+
+  /**
+   * Fire a single bullet with optional horizontal spread.
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} spreadX - Horizontal spread factor
+   */
+  fireBullet(x, y, spreadX = 0) {
+    const bullet = this.bullets.get(x, y);
+    if (bullet) {
+      bullet.fire(x, y, spreadX);
+    }
+  }
+
+  /**
+   * Fire bullets in a spread/fan pattern.
+   * @param {number} x - Center X position
+   * @param {number} y - Y position
+   * @param {number} count - Number of bullets
+   * @param {number} maxAngle - Max spread angle per side
+   */
+  fireSpread(x, y, count, maxAngle) {
+    if (count === 1) {
+      this.fireBullet(x, y, 0);
+      return;
     }
 
-    this.lastFired = time;
+    // Calculate angle step between bullets
+    const totalSpread = maxAngle * 2;
+    const step = totalSpread / (count - 1);
+
+    for (let i = 0; i < count; i++) {
+      const angle = -maxAngle + (step * i);
+      this.fireBullet(x, y, angle);
+    }
   }
 
   /**

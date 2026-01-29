@@ -22,33 +22,109 @@ export default {
     POOL_SIZE: 50,
   },
 
-  // Projectile registry - add new weapon types here
+  // Projectile registry - visual and physics properties
   PROJECTILES: {
     player_bullet: {
       texture: 'sprites',
       frame: 'vulcan_1.png',
       speed: 500,
       direction: -1, // upward
+      damage: 1,
     },
     player_laser: {
       texture: 'sprites',
       frame: 'laser_1.png',
       speed: 700,
       direction: -1,
+      damage: 2,
+    },
+    player_spread: {
+      texture: 'sprites',
+      frame: 'vulcan_1.png',
+      speed: 450,
+      direction: -1,
+      damage: 1,
+    },
+    player_plasma: {
+      texture: 'sprites',
+      frame: 'proton_01.png',
+      speed: 350,
+      direction: -1,
+      damage: 4,
+      piercing: true, // future: goes through enemies
     },
     enemy_bullet: {
       texture: 'sprites',
       frame: 'plasma_1.png',
       speed: 300,
       direction: 1, // downward
+      damage: 10,
     },
     enemy_plasma: {
       texture: 'sprites',
       frame: 'proton_01.png',
       speed: 250,
       direction: 1,
+      damage: 15,
     },
   },
+
+  // Weapon registry - player weapon types with upgrade paths
+  // Each weapon defines: projectile type, base stats, and level upgrades
+  // Fire patterns:
+  //   'single' - one bullet straight ahead
+  //   'spread' - multiple bullets in a fan pattern
+  //   'dual' - two parallel bullets
+  //   'burst' - rapid fire burst then cooldown
+  WEAPONS: {
+    vulcan: {
+      name: 'Vulcan Cannon',
+      description: 'Rapid-fire ballistic rounds',
+      projectile: 'player_bullet',
+      baseFireRate: 150,
+      levels: [
+        { pattern: 'single', bulletCount: 1, fireRateMult: 1.0, spread: 0 },
+        { pattern: 'dual', bulletCount: 2, fireRateMult: 0.85, spread: 15 },
+        { pattern: 'spread', bulletCount: 3, fireRateMult: 0.7, spread: 20, spreadAngle: 0.15 },
+      ],
+    },
+    laser: {
+      name: 'Laser Beam',
+      description: 'High-speed precision laser',
+      projectile: 'player_laser',
+      baseFireRate: 200,
+      levels: [
+        { pattern: 'single', bulletCount: 1, fireRateMult: 1.0, spread: 0 },
+        { pattern: 'single', bulletCount: 1, fireRateMult: 0.6, spread: 0 }, // faster
+        { pattern: 'dual', bulletCount: 2, fireRateMult: 0.5, spread: 12 },
+      ],
+    },
+    spreader: {
+      name: 'Spreader',
+      description: 'Wide-angle coverage weapon',
+      projectile: 'player_spread',
+      baseFireRate: 250,
+      levels: [
+        { pattern: 'spread', bulletCount: 3, fireRateMult: 1.0, spread: 25, spreadAngle: 0.2 },
+        { pattern: 'spread', bulletCount: 5, fireRateMult: 0.9, spread: 35, spreadAngle: 0.25 },
+        { pattern: 'spread', bulletCount: 7, fireRateMult: 0.8, spread: 45, spreadAngle: 0.3 },
+      ],
+    },
+    plasma: {
+      name: 'Plasma Cannon',
+      description: 'Slow but devastating plasma bolts',
+      projectile: 'player_plasma',
+      baseFireRate: 500,
+      levels: [
+        { pattern: 'single', bulletCount: 1, fireRateMult: 1.0, spread: 0 },
+        { pattern: 'single', bulletCount: 1, fireRateMult: 0.7, spread: 0 },
+        { pattern: 'dual', bulletCount: 2, fireRateMult: 0.6, spread: 20 },
+      ],
+    },
+  },
+
+  // Default starting weapon
+  DEFAULT_WEAPON: 'vulcan',
 
   ENEMY: {
     // Tilt thresholds for visual feedback
@@ -336,6 +412,7 @@ export default {
     WEAPON_BULLET_COUNT: [1, 2, 3],
 
     // Power-up type registry - add new types here
+    // For weapon pickups, set weaponType to switch player's weapon
     TYPES: {
       health: {
         color: 0x00ff00,
@@ -347,6 +424,7 @@ export default {
         color: 0xff6600,
         text: 'WEAPON UP!',
         textColor: '#ff6600',
+        // Upgrades current weapon level
       },
       speed: {
         color: 0x00aaff,
@@ -360,6 +438,25 @@ export default {
         text: 'SHIELD!',
         textColor: '#aa44ff',
         duration: 4000,
+      },
+      // Weapon pickups - switch to a new weapon type
+      laser: {
+        color: 0x00ffff,
+        text: 'LASER!',
+        textColor: '#00ffff',
+        weaponType: 'laser',
+      },
+      spreader: {
+        color: 0xffff00,
+        text: 'SPREADER!',
+        textColor: '#ffff00',
+        weaponType: 'spreader',
+      },
+      plasma: {
+        color: 0xff00ff,
+        text: 'PLASMA!',
+        textColor: '#ff00ff',
+        weaponType: 'plasma',
       },
     },
   },

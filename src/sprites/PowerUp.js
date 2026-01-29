@@ -168,6 +168,13 @@ export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
    * @param {Object} config - Type config
    */
   applyEffect(player, type, config) {
+    // Check for weapon pickup (switches weapon type)
+    if (config.weaponType) {
+      player.switchWeapon(config.weaponType);
+      return;
+    }
+
+    // Standard power-up effects
     switch (type) {
       case 'health':
         player.heal(config.healAmount);
