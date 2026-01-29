@@ -122,9 +122,8 @@ export default class BossManager {
 
       // Delay each spawn slightly
       this.scene.time.delayedCall(i * 200, () => {
-        const enemyType = type === 'heavy' ? 2 : 1;
         const color = Phaser.Math.RND.pick(['r', 'g', 'b']);
-        const enemy = this.enemySpawner.spawnSingleEnemy(x, y, enemyType, color);
+        const enemy = this.enemySpawner.spawnSingleEnemy(x, y, type, color);
 
         if (enemy) {
           // Make them fly inward
