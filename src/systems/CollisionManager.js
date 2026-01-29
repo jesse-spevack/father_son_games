@@ -111,16 +111,19 @@ export default class CollisionManager {
     if (enemy.takeDamage(1)) {
       this.scene.events.emit('addScore', enemy.points);
       this.scene.events.emit('enemyKilled');
-      this.trySpawnPowerUp(enemy.x, enemy.y);
+      this.trySpawnPowerUp(enemy.x, enemy.y, enemy.getLoot());
     }
   }
 
   /**
    * Attempt to spawn a power-up at the given position based on drop chance.
+   * Uses enemy loot table if provided, otherwise falls back to global config.
    * @param {number} x - X position
    * @param {number} y - Y position
+   * @param {Object} [loot] - Enemy's loot table (optional)
    */
-  trySpawnPowerUp(x, y) {
+  trySpawnPowerUp(x, y, loot = null) {
+    // First check global drop chance
     if (Math.random() > GameConfig.POWER_UP.DROP_CHANCE) {
       return;
     }
@@ -129,9 +132,31 @@ export default class CollisionManager {
     const powerUp = this.scene.powerUps.get(x, y);
     if (!powerUp) return;
 
-    // Randomly select power-up type from registry
-    const types = Object.keys(GameConfig.POWER_UP.TYPES);
-    const type = Phaser.Math.RND.pick(types);
+    // Determine power-up type
+    let type;
+
+    if (loot && loot.dropTable && loot.dropTable.length > 0) {
+      // Use enemy's loot table with weighted chances
+      const roll = Math.random();
+      let cumulative = 0;
+
+      for (const drop of loot.dropTable) {
+        cumulative += drop.chance;
+        if (roll <= cumulative) {
+          type = drop.item;
+          break;
+        }
+      }
+
+      // Fallback if no type selected (shouldn't happen if chances sum to 1)
+      if (!type) {
+        type = loot.dropTable[0].item;
+      }
+    } else {
+      // Fallback: randomly select from all power-up types
+      const types = Object.keys(GameConfig.POWER_UP.TYPES);
+      type = Phaser.Math.RND.pick(types);
+    }
 
     powerUp.spawn(x, y, type);
   }
@@ -183,9 +208,12 @@ export default class CollisionManager {
     if (this.scene.player?.isInvincible) return;
 
     this.scene.events.emit('playExplosion', { x: enemy.x, y: enemy.y });
+
+    // Use enemy's configured damage value
+    const damage = enemy.getCollisionDamage ? enemy.getCollisionDamage() : 25;
     enemy.destroy();
 
-    if (!this.scene.player?.takeDamage(25)) {
+    if (!this.scene.player?.takeDamage(damage)) {
       this.scene.events.emit('loseLife');
     }
   }

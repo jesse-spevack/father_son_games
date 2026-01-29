@@ -56,6 +56,26 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.speed = config.speed;
     this.points = config.points;
     this.fireRate = config.fireRate;
+    this.damage = config.damage || 10;
+
+    // Movement pattern
+    this.movementPattern = config.movement || 'straight';
+    this.movementAmplitude = config.movementAmplitude || 60;
+    this.movementFrequency = config.movementFrequency || 3;
+    this.diveSpeed = config.diveSpeed || 300;
+    this.diveDistance = config.diveDistance || 200;
+    this.isDiving = false;
+    this.spawnX = x; // remember starting X for sine wave
+    this.elapsedTime = 0;
+
+    // Attack pattern
+    this.attackPattern = config.attack || 'basic';
+    this.burstCount = 0;
+    this.burstMax = 3;
+    this.burstDelay = 150; // ms between burst shots
+
+    // Loot table (RPG-ready)
+    this.loot = config.loot || null;
 
     // Shooting state - randomize initial delay so enemies don't all shoot at once
     this.lastFired = -Phaser.Math.Between(0, this.fireRate);
@@ -141,22 +161,157 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
+   * Update movement based on pattern type
+   * @param {number} delta - Time since last frame in ms
+   */
+  updateMovement(delta) {
+    this.elapsedTime += delta;
+
+    switch (this.movementPattern) {
+      case 'sine':
+        // Weave side to side while descending
+        const waveOffset = Math.sin(this.elapsedTime * 0.001 * this.movementFrequency * Math.PI * 2) * this.movementAmplitude;
+        this.x = this.spawnX + waveOffset;
+        this.setVelocityY(this.speed);
+        break;
+
+      case 'zigzag':
+        // Sharp direction changes at intervals
+        const zigInterval = 500; // ms between direction changes
+        const zigSpeed = this.speed * 0.8;
+        const direction = Math.floor(this.elapsedTime / zigInterval) % 2 === 0 ? 1 : -1;
+        this.setVelocityX(zigSpeed * direction);
+        this.setVelocityY(this.speed);
+        // Bounce off screen edges
+        if (this.x < 50 || this.x > this.scene.cameras.main.width - 50) {
+          this.spawnX = this.x; // reset reference
+        }
+        break;
+
+      case 'dive':
+        // Accelerate toward player when close
+        if (!this.isDiving && this.scene.player) {
+          const distToPlayer = Phaser.Math.Distance.Between(
+            this.x, this.y,
+            this.scene.player.x, this.scene.player.y
+          );
+          if (distToPlayer < this.diveDistance) {
+            this.isDiving = true;
+          }
+        }
+        if (this.isDiving && this.scene.player) {
+          // Dive toward player position
+          const angle = Phaser.Math.Angle.Between(
+            this.x, this.y,
+            this.scene.player.x, this.scene.player.y
+          );
+          this.setVelocity(
+            Math.cos(angle) * this.diveSpeed,
+            Math.sin(angle) * this.diveSpeed
+          );
+        } else {
+          this.setVelocityY(this.speed);
+        }
+        break;
+
+      case 'straight':
+      default:
+        // Standard downward movement
+        this.setVelocityY(this.speed);
+        break;
+    }
+  }
+
+  /**
+   * Execute attack based on pattern type
+   * @param {number} time - Current game time
+   */
+  executeAttack(time) {
+    if (!this.bulletGroup) return;
+
+    switch (this.attackPattern) {
+      case 'aimed':
+        // Fire toward player position
+        if (this.scene.player) {
+          const bullet = this.bulletGroup.get(this.x, this.y + 20);
+          if (bullet) {
+            const angle = Phaser.Math.Angle.Between(
+              this.x, this.y,
+              this.scene.player.x, this.scene.player.y
+            );
+            bullet.fire(this.x, this.y + 20);
+            bullet.setVelocity(
+              Math.cos(angle) * 300,
+              Math.sin(angle) * 300
+            );
+            this.lastFired = time;
+          }
+        }
+        break;
+
+      case 'burst':
+        // Fire 3 quick shots then pause
+        if (this.burstCount < this.burstMax) {
+          const bullet = this.bulletGroup.get(this.x, this.y + 20);
+          if (bullet) {
+            bullet.fire(this.x, this.y + 20);
+            this.burstCount++;
+            this.lastFired = time - this.fireRate + this.burstDelay; // short delay for next burst shot
+          }
+        } else {
+          this.burstCount = 0;
+          this.lastFired = time; // full cooldown after burst
+        }
+        break;
+
+      case 'none':
+        // Don't shoot
+        break;
+
+      case 'basic':
+      default:
+        // Standard straight-down shot
+        this.shoot(time);
+        break;
+    }
+  }
+
+  /**
    * Called every frame - update tilt, shooting, and check bounds
    */
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
+
+    // Update movement pattern
+    this.updateMovement(delta);
 
     // Update tilt based on movement
     this.updateTilt();
 
     // Check if should shoot (only when on screen)
     if (this.y > 0 && this.y < this.scene.cameras.main.height && this.canShoot(time)) {
-      this.shoot(time);
+      this.executeAttack(time);
     }
 
     // Destroy if past bottom of screen (with buffer)
     if (this.y > this.scene.cameras.main.height + 50) {
       this.destroy();
     }
+  }
+
+  /**
+   * Get this enemy's loot table for drops
+   * @returns {Object|null} Loot configuration or null
+   */
+  getLoot() {
+    return this.loot;
+  }
+
+  /**
+   * Get collision damage this enemy deals
+   * @returns {number} Damage amount
+   */
+  getCollisionDamage() {
+    return this.damage;
   }
 }

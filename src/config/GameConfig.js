@@ -57,6 +57,23 @@ export default {
 
     // Enemy type registry - add new types here
     // frameId corresponds to sprite atlas naming: enemy_{frameId}_{color}_{tilt}.png
+    //
+    // Movement patterns:
+    //   'straight' - moves directly downward
+    //   'sine' - weaves side to side while descending
+    //   'zigzag' - sharp direction changes
+    //   'dive' - accelerates toward player
+    //
+    // Attack patterns:
+    //   'basic' - fires straight down at fire rate
+    //   'aimed' - fires toward player position
+    //   'burst' - fires 3 quick shots then pauses
+    //   'none' - doesn't shoot
+    //
+    // Loot tables (RPG-ready):
+    //   credits: { min, max } - currency drop range
+    //   dropTable: [{ item, chance }] - item drop chances (stacks with global DROP_CHANCE)
+    //
     TYPES: {
       fighter: {
         frameId: '1',
@@ -64,6 +81,18 @@ export default {
         speed: 150,
         points: 100,
         fireRate: 2000,
+        damage: 10, // collision damage to player
+        movement: 'straight',
+        attack: 'basic',
+        // Loot (RPG-ready, not yet active)
+        loot: {
+          credits: { min: 5, max: 15 },
+          dropTable: [
+            { item: 'health', chance: 0.6 },
+            { item: 'weapon', chance: 0.3 },
+            { item: 'speed', chance: 0.1 },
+          ],
+        },
       },
       heavy: {
         frameId: '2',
@@ -71,6 +100,58 @@ export default {
         speed: 80,
         points: 250,
         fireRate: 1500,
+        damage: 25,
+        movement: 'straight',
+        attack: 'basic',
+        loot: {
+          credits: { min: 15, max: 40 },
+          dropTable: [
+            { item: 'health', chance: 0.4 },
+            { item: 'weapon', chance: 0.4 },
+            { item: 'shield', chance: 0.2 },
+          ],
+        },
+      },
+      // Fast weaving enemy - harder to hit
+      scout: {
+        frameId: '1', // reuse fighter sprite for now
+        health: 1,
+        speed: 200,
+        points: 150,
+        fireRate: 3000,
+        damage: 10,
+        movement: 'sine',
+        movementAmplitude: 80, // pixels side to side
+        movementFrequency: 3, // waves per screen
+        attack: 'none',
+        loot: {
+          credits: { min: 10, max: 25 },
+          dropTable: [
+            { item: 'speed', chance: 0.5 },
+            { item: 'health', chance: 0.5 },
+          ],
+        },
+      },
+      // Aggressive enemy that dives at player
+      bomber: {
+        frameId: '2', // reuse heavy sprite for now
+        health: 2,
+        speed: 120,
+        points: 200,
+        fireRate: 2500,
+        damage: 35,
+        movement: 'dive',
+        diveSpeed: 300, // speed when diving
+        diveDistance: 200, // pixels from player to trigger dive
+        attack: 'aimed',
+        loot: {
+          credits: { min: 20, max: 50 },
+          dropTable: [
+            { item: 'weapon', chance: 0.5 },
+            { item: 'shield', chance: 0.3 },
+            { item: 'health', chance: 0.2 },
+          ],
+        },
       },
     },
   },
@@ -152,7 +233,16 @@ export default {
     MAX_SPAWN_INTERVAL: 3000,
     SPAWN_MARGIN: 60, // keep formations away from edges
     SHIP_SPACING: 50,
-    FIGHTER_SPAWN_WEIGHT: 0.7, // 70% chance of fighter vs heavy
+    FIGHTER_SPAWN_WEIGHT: 0.7, // legacy fallback
+
+    // Spawn weights per enemy type (relative weights, not percentages)
+    // Higher number = more likely to spawn
+    SPAWN_WEIGHTS: {
+      fighter: 50,  // common
+      heavy: 25,    // less common
+      scout: 15,    // uncommon
+      bomber: 10,   // rare
+    },
   },
 
   // Formation registry - positions are in unit spacing (multiplied by SHIP_SPACING)
@@ -167,7 +257,7 @@ export default {
         { x: -2, y: 2 },     // Far left
         { x: 2, y: 2 },      // Far right
       ],
-      types: ['fighter', 'heavy'],
+      types: ['fighter', 'heavy', 'scout'],
     },
     line: {
       // Horizontal line of 3-5 ships (randomized at spawn)
@@ -180,7 +270,7 @@ export default {
       ],
       minShips: 3,
       maxShips: 5,
-      types: ['fighter', 'heavy'],
+      types: ['fighter', 'heavy', 'scout'],
     },
     diamond: {
       // Diamond shape
@@ -193,7 +283,7 @@ export default {
       types: ['fighter', 'heavy'],
     },
     arrow: {
-      // Arrow pointing down
+      // Arrow pointing down - fast scouts
       positions: [
         { x: 0, y: 0 },      // Tip
         { x: -1, y: -1 },    // Left back
@@ -201,17 +291,36 @@ export default {
         { x: -2, y: -2 },    // Far left back
         { x: 2, y: -2 },     // Far right back
       ],
-      types: ['fighter'],
+      types: ['fighter', 'scout'],
     },
     box: {
-      // Square formation
+      // Square formation - heavy assault
       positions: [
         { x: -1, y: 0 },
         { x: 1, y: 0 },
         { x: -1, y: 2 },
         { x: 1, y: 2 },
       ],
-      types: ['heavy'],
+      types: ['heavy', 'bomber'],
+    },
+    // New formation: spread of scouts weaving across screen
+    swarm: {
+      positions: [
+        { x: -3, y: 0 },
+        { x: -1, y: 0.5 },
+        { x: 1, y: 0.5 },
+        { x: 3, y: 0 },
+      ],
+      types: ['scout'],
+    },
+    // New formation: bomber strike group
+    strike: {
+      positions: [
+        { x: 0, y: 0 },      // Lead bomber
+        { x: -1.5, y: 1 },   // Escort left
+        { x: 1.5, y: 1 },    // Escort right
+      ],
+      types: ['bomber', 'heavy'],
     },
   },
 

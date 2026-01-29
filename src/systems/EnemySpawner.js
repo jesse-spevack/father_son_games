@@ -54,13 +54,31 @@ export default class EnemySpawner {
   }
 
   /**
-   * Get a random enemy type (weighted towards fighter)
+   * Get a random enemy type using spawn weights from config
    * @returns {string} Enemy type key from config
    */
   getRandomType() {
-    // Use spawn weight from config (70% fighter, 30% heavy)
-    const weight = GameConfig.SPAWNER.FIGHTER_SPAWN_WEIGHT;
-    return Math.random() < weight ? 'fighter' : 'heavy';
+    // Use spawn weights from config
+    const weights = GameConfig.SPAWNER.SPAWN_WEIGHTS;
+    if (!weights) {
+      // Fallback to legacy behavior
+      const weight = GameConfig.SPAWNER.FIGHTER_SPAWN_WEIGHT;
+      return Math.random() < weight ? 'fighter' : 'heavy';
+    }
+
+    // Weighted random selection
+    const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const [type, weight] of Object.entries(weights)) {
+      random -= weight;
+      if (random <= 0) {
+        return type;
+      }
+    }
+
+    // Fallback
+    return 'fighter';
   }
 
   /**
