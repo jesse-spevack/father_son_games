@@ -69,93 +69,68 @@ export default class GameOverScene extends Phaser.Scene {
       fill: '#ffffff',
     }).setOrigin(0.5);
 
-    // Initials display with boxes
+    // Initials display - tappable to open keyboard on mobile
     this.initialsText = this.add.text(centerX, 300, '_ _ _', {
       font: '48px monospace',
       fill: '#00ff00',
     }).setOrigin(0.5);
 
-    // Create touch-friendly letter grid for mobile
-    this.createLetterGrid(centerX, 360);
+    // Create hidden HTML input for native keyboard
+    this.createNativeInput();
 
-    this.add.text(centerX, 580, 'Keyboard also works', {
-      font: '14px monospace',
-      fill: '#666666',
-    }).setOrigin(0.5);
-  }
-
-  createLetterGrid(centerX, startY) {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const cols = 9;
-    const buttonSize = 40;
-    const padding = 6;
-    const totalWidth = cols * (buttonSize + padding) - padding;
-    const startX = centerX - totalWidth / 2 + buttonSize / 2;
-
-    this.letterButtons = [];
-
-    letters.split('').forEach((letter, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = startX + col * (buttonSize + padding);
-      const y = startY + row * (buttonSize + padding);
-
-      // Button background
-      const bg = this.add.rectangle(x, y, buttonSize, buttonSize, 0x333333)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerover', () => bg.setFillStyle(0x555555))
-        .on('pointerout', () => bg.setFillStyle(0x333333))
-        .on('pointerdown', () => this.addLetter(letter));
-
-      // Button text
-      const text = this.add.text(x, y, letter, {
-        font: '20px monospace',
-        fill: '#ffffff',
-      }).setOrigin(0.5);
-
-      this.letterButtons.push({ bg, text });
-    });
-
-    // Backspace button
-    const backX = startX + 6 * (buttonSize + padding);
-    const backY = startY + 3 * (buttonSize + padding);
-    const backBg = this.add.rectangle(backX, backY, buttonSize * 2 + padding, buttonSize, 0x663333)
+    // Make initials text tappable to focus input
+    const hitArea = this.add.rectangle(centerX, 300, 200, 60, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
-      .on('pointerover', () => backBg.setFillStyle(0x884444))
-      .on('pointerout', () => backBg.setFillStyle(0x663333))
-      .on('pointerdown', () => this.removeLetter());
-    this.add.text(backX, backY, 'DEL', {
-      font: '18px monospace',
-      fill: '#ffffff',
+      .on('pointerdown', () => this.focusInput());
+
+    this.add.text(centerX, 350, 'Tap above to enter initials', {
+      font: '16px monospace',
+      fill: '#888888',
     }).setOrigin(0.5);
 
     // Submit button
-    const submitX = centerX;
-    const submitY = startY + 4 * (buttonSize + padding) + 10;
-    this.submitButton = this.add.rectangle(submitX, submitY, 160, 44, 0x336633)
+    this.submitButton = this.add.rectangle(centerX, 410, 160, 44, 0x222222)
       .setInteractive({ useHandCursor: true })
-      .on('pointerover', () => this.submitButton.setFillStyle(0x448844))
-      .on('pointerout', () => this.submitButton.setFillStyle(0x336633))
       .on('pointerdown', () => this.trySubmit());
-    this.submitText = this.add.text(submitX, submitY, 'SUBMIT', {
+    this.submitText = this.add.text(centerX, 410, 'SUBMIT', {
       font: '20px monospace',
       fill: '#888888',
     }).setOrigin(0.5);
   }
 
-  addLetter(letter) {
-    if (this.initials.length < 3) {
-      this.initials += letter;
+  createNativeInput() {
+    // Create hidden input element for native keyboard
+    this.hiddenInput = document.createElement('input');
+    this.hiddenInput.type = 'text';
+    this.hiddenInput.maxLength = 3;
+    this.hiddenInput.autocomplete = 'off';
+    this.hiddenInput.autocapitalize = 'characters';
+    this.hiddenInput.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      top: 50%;
+      opacity: 0;
+    `;
+
+    // Update display on input
+    this.hiddenInput.addEventListener('input', () => {
+      this.initials = this.hiddenInput.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+      this.hiddenInput.value = this.initials;
       this.updateInitialsDisplay();
       this.updateSubmitButton();
-    }
+
+      // Auto-submit when 3 letters entered
+      if (this.initials.length === 3) {
+        this.hiddenInput.blur();
+      }
+    });
+
+    document.body.appendChild(this.hiddenInput);
   }
 
-  removeLetter() {
-    if (this.initials.length > 0) {
-      this.initials = this.initials.slice(0, -1);
-      this.updateInitialsDisplay();
-      this.updateSubmitButton();
+  focusInput() {
+    if (this.hiddenInput && !this.submitted && !this.submitting) {
+      this.hiddenInput.focus();
     }
   }
 
@@ -168,8 +143,15 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   trySubmit() {
-    if (this.initials.length === 3) {
+    if (this.initials.length === 3 && !this.submitting) {
       this.submitScore();
+    }
+  }
+
+  destroyNativeInput() {
+    if (this.hiddenInput && this.hiddenInput.parentNode) {
+      this.hiddenInput.parentNode.removeChild(this.hiddenInput);
+      this.hiddenInput = null;
     }
   }
 
@@ -210,6 +192,7 @@ export default class GameOverScene extends Phaser.Scene {
     if (this.submitting) return;
     this.submitting = true;
 
+    this.destroyNativeInput();
     this.initialsText.setText('...');
 
     await leaderboardService.submitScore({
@@ -228,7 +211,7 @@ export default class GameOverScene extends Phaser.Scene {
   create_postSubmit() {
     const centerX = this.cameras.main.centerX;
 
-    this.add.text(centerX, 40, 'SCORE SUBMITTED!', {
+    this.add.text(centerX, 40, 'SCORE RECORDED!', {
       font: '32px monospace',
       fill: '#00ff00',
     }).setOrigin(0.5);
@@ -299,6 +282,7 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   restartGame() {
+    this.destroyNativeInput();
     this.scene.start('GameScene');
   }
 
