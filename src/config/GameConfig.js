@@ -1,8 +1,106 @@
 /**
- * Centralized game configuration and constants.
+ * @file Centralized game configuration and constants.
  * All magic numbers and tunable values should be defined here.
  */
-export default {
+
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
+
+/**
+ * @typedef {Object} EnemyTypeConfig
+ * @property {string} frameId - Sprite frame ID
+ * @property {number} health - Hit points
+ * @property {number} speed - Movement speed
+ * @property {number} points - Score value
+ * @property {number} fireRate - Time between shots (ms)
+ * @property {number} [damage] - Collision damage to player
+ * @property {'straight'|'sine'|'zigzag'|'dive'} [movement] - Movement pattern
+ * @property {number} [movementAmplitude] - Sine wave amplitude (pixels)
+ * @property {number} [movementFrequency] - Sine wave frequency
+ * @property {number} [diveSpeed] - Speed when diving
+ * @property {number} [diveDistance] - Distance to trigger dive
+ * @property {'basic'|'aimed'|'burst'|'none'} [attack] - Attack pattern
+ * @property {LootConfig} [loot] - Loot drop configuration
+ */
+
+/**
+ * @typedef {Object} LootConfig
+ * @property {{min: number, max: number}} [credits] - Currency drop range
+ * @property {Array<{item: string, chance: number}>} [dropTable] - Item drop chances
+ */
+
+/**
+ * @typedef {Object} WeaponLevelConfig
+ * @property {'single'|'dual'|'spread'|'burst'} pattern - Fire pattern
+ * @property {number} bulletCount - Number of bullets per shot
+ * @property {number} fireRateMult - Fire rate multiplier
+ * @property {number} [spread] - Pixel spread for dual pattern
+ * @property {number} [spreadAngle] - Angle spread for spread pattern
+ */
+
+/**
+ * @typedef {Object} WeaponConfig
+ * @property {string} name - Display name
+ * @property {string} description - Weapon description
+ * @property {string} projectile - Projectile type key
+ * @property {number} baseFireRate - Base fire rate (ms)
+ * @property {WeaponLevelConfig[]} levels - Upgrade levels
+ */
+
+/**
+ * @typedef {Object} ProjectileConfig
+ * @property {string} texture - Texture atlas key
+ * @property {string} frame - Frame name in atlas
+ * @property {number} speed - Movement speed
+ * @property {-1|1} direction - -1 for upward, 1 for downward
+ * @property {number} [damage] - Damage dealt
+ * @property {boolean} [piercing] - Whether bullet pierces enemies
+ */
+
+/**
+ * @typedef {Object} FormationConfig
+ * @property {Array<{x: number, y: number}>} positions - Ship positions (in spacing units)
+ * @property {string[]} [types] - Allowed enemy types
+ * @property {number} [minShips] - Minimum ships for variable formations
+ * @property {number} [maxShips] - Maximum ships for variable formations
+ */
+
+/**
+ * @typedef {Object} PowerUpTypeConfig
+ * @property {number} color - Hex color for tint
+ * @property {string} text - Floating text to display
+ * @property {string} textColor - CSS color for text
+ * @property {number} [healAmount] - HP to restore (health type)
+ * @property {number} [speedMult] - Speed multiplier (speed type)
+ * @property {number} [duration] - Effect duration (speed/shield types)
+ * @property {string} [weaponType] - Weapon to switch to (weapon pickup types)
+ */
+
+/**
+ * @typedef {Object} GameConfigType
+ * @property {Object} PLAYER - Player configuration
+ * @property {Object} BULLET - Player bullet configuration
+ * @property {Object} ENEMY_BULLET - Enemy bullet configuration
+ * @property {Object<string, ProjectileConfig>} PROJECTILES - Projectile registry
+ * @property {Object<string, WeaponConfig>} WEAPONS - Weapon registry
+ * @property {string} DEFAULT_WEAPON - Default starting weapon
+ * @property {Object} ENEMY - Enemy configuration and registry
+ * @property {Object<string, EnemyTypeConfig>} ENEMY.TYPES - Enemy type registry
+ * @property {Object} MINE - Mine configuration
+ * @property {Object} BOSS - Boss configuration
+ * @property {Object} DIFFICULTY - Difficulty scaling
+ * @property {Object} SPAWNER - Spawn configuration
+ * @property {Object<string, FormationConfig>} FORMATIONS - Formation registry
+ * @property {Object} POWER_UP - Power-up configuration
+ * @property {Object<string, PowerUpTypeConfig>} POWER_UP.TYPES - Power-up type registry
+ * @property {Object} DISPLAY - Display constants
+ * @property {Object} UI - UI configuration
+ * @property {Object} DIFFICULTY_SCALING - Difficulty formulas
+ */
+
+/** @type {GameConfigType} */
+const GameConfig = {
   PLAYER: {
     SPEED: 300,
     MAX_HEALTH: 100,
@@ -614,3 +712,5 @@ export default {
     MINE_INTERVAL_REDUCTION: 300, // per difficulty level
   },
 };
+
+export default GameConfig;

@@ -1,13 +1,25 @@
 /**
- * PoolManager - Centralized object pool management.
+ * @file PoolManager - Centralized object pool management.
  * Provides a single interface for creating and managing all game object pools.
+ */
+
+/**
+ * @typedef {Object} PoolConfig
+ * @property {number} [maxSize] - Maximum pool size
+ * @property {boolean} [runChildUpdate=true] - Whether to call preUpdate on children
+ */
+
+/**
+ * PoolManager - Centralized object pool management.
  */
 export default class PoolManager {
   /**
    * @param {Phaser.Scene} scene - The game scene
    */
   constructor(scene) {
+    /** @type {Phaser.Scene} */
     this.scene = scene;
+    /** @type {Object<string, Phaser.Physics.Arcade.Group>} */
     this.pools = {};
   }
 

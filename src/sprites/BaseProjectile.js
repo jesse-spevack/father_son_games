@@ -2,22 +2,32 @@ import Phaser from 'phaser';
 import GameConfig from '../config/GameConfig.js';
 
 /**
- * Base class for all projectiles (player bullets, enemy bullets, etc.)
+ * @file Base class for all projectiles (player bullets, enemy bullets, etc.)
  * Uses object pooling - projectiles are reused when off-screen.
  * Subclasses must implement isOffScreen() to define when to deactivate.
  */
+
+/**
+ * @typedef {import('../config/GameConfig.js').ProjectileConfig} ProjectileConfig
+ */
+
+/**
+ * Base class for all projectiles.
+ * @extends Phaser.Physics.Arcade.Sprite
+ * @abstract
+ */
 export default class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
   /**
-   * Get projectile config by type key
+   * Get projectile config by type key.
    * @param {string} type - Projectile type key from GameConfig.PROJECTILES
-   * @returns {Object|null} Projectile config or null
+   * @returns {ProjectileConfig|null} Projectile config or null
    */
   static getTypeConfig(type) {
     return GameConfig.PROJECTILES[type] || null;
   }
 
   /**
-   * Get all projectile type keys
+   * Get all projectile type keys.
    * @returns {string[]}
    */
   static getTypeKeys() {
@@ -25,20 +35,25 @@ export default class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
+   * Create a new projectile.
    * @param {Phaser.Scene} scene - The scene this projectile belongs to
    * @param {number} x - Initial X position
    * @param {number} y - Initial Y position
    * @param {string} texture - Texture atlas key
    * @param {string} frame - Frame name within the atlas
    * @param {number} speed - Movement speed (positive value)
-   * @param {number} direction - 1 for downward, -1 for upward
+   * @param {-1|1} direction - 1 for downward, -1 for upward
    */
   constructor(scene, x, y, texture, frame, speed, direction) {
     super(scene, x, y, texture, frame);
     scene.add.existing(this);
     scene.physics.add.existing(this);
+
+    /** @type {number} Movement speed */
     this.speed = speed;
+    /** @type {-1|1} Direction: -1=up, 1=down */
     this.direction = direction;
+
     this.setActive(false);
     this.setVisible(false);
   }

@@ -1,12 +1,42 @@
 import GameConfig from '../config/GameConfig.js';
 
 /**
+ * @typedef {Object} GameStats
+ * @property {number} score - Final score
+ * @property {number} wave - Final wave/difficulty level
+ * @property {number} enemiesKilled - Total enemies killed
+ * @property {number} timeSurvived - Survival time in seconds
+ */
+
+/**
  * Centralized game state management.
  * This is a data class that holds all game state variables.
  * Note: Invincibility state has been moved to Player class.
  */
 export default class GameState {
+  /**
+   * Create a new GameState instance.
+   */
   constructor() {
+    /** @type {number} Current score */
+    this.score = 0;
+    /** @type {number} Remaining lives */
+    this.lives = 0;
+    /** @type {number} Current difficulty level */
+    this.difficulty = 1;
+    /** @type {boolean} Whether game has started */
+    this.gameStarted = false;
+    /** @type {number} Timer for difficulty progression */
+    this.difficultyTimer = 0;
+    /** @type {number} Timer for mine spawning */
+    this.mineSpawnTimer = 0;
+    /** @type {number} Total enemies killed */
+    this.enemiesKilled = 0;
+    /** @type {number} Time survived in seconds */
+    this.timeSurvived = 0;
+    /** @type {number} Game start timestamp */
+    this.gameStartTime = 0;
+
     this.reset();
   }
 
@@ -72,7 +102,7 @@ export default class GameState {
 
   /**
    * Get stats for leaderboard submission.
-   * @returns {Object} Stats object
+   * @returns {GameStats} Stats object
    */
   getStats() {
     return {

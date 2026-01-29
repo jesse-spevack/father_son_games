@@ -1,14 +1,19 @@
 import GameConfig from '../config/GameConfig.js';
 
 /**
- * VisualEffectsManager - Centralized visual effects for consistent game feel.
+ * @file VisualEffectsManager - Centralized visual effects for consistent game feel.
  * Handles explosions, flashes, screen shakes, and floating text.
+ */
+
+/**
+ * VisualEffectsManager - Centralized visual effects for consistent game feel.
  */
 export default class VisualEffectsManager {
   /**
    * @param {Phaser.Scene} scene - The game scene
    */
   constructor(scene) {
+    /** @type {Phaser.Scene} */
     this.scene = scene;
   }
 
