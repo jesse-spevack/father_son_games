@@ -10,6 +10,40 @@ export default {
     FIRE_RATE: 150, // ms between shots
     INVINCIBILITY_DURATION: 1600, // 100ms * 16 flashes
     TOUCH_DEADZONE: 10, // pixels from player center to ignore touch
+    SPAWN_Y_OFFSET: 100, // pixels from bottom of screen
+
+    // Visual effects
+    EXHAUST_Y_OFFSET: 35,
+    HITBOX_SCALE: 0.8, // smaller hitbox than sprite
+    TILT_THRESHOLD_LOW: 0.3, // % of speed for slight tilt
+    TILT_THRESHOLD_HIGH: 0.7, // % of speed for max tilt
+
+    // Damage feedback
+    DAMAGE_FLASH_DURATION: 100,
+    DAMAGE_FLASH_ALPHA: 0.5,
+    DAMAGE_FLASH_REPEATS: 2,
+
+    // Invincibility flash
+    INVINCIBILITY_ALPHA_MIN: 0.3,
+    INVINCIBILITY_ALPHA_MAX: 0.8,
+    INVINCIBILITY_FLASH_COUNT: 15,
+
+    // Power-up visual feedback
+    UPGRADE_SCALE: 1.2,
+    UPGRADE_DURATION: 100,
+    WEAPON_SWITCH_SCALE: 1.3,
+    WEAPON_SWITCH_DURATION: 150,
+    SPEED_BOOST_TINT: 0x88ccff,
+
+    // Shield effect
+    SHIELD_RADIUS: 40,
+    SHIELD_COLOR: 0xaa44ff,
+    SHIELD_ALPHA: 0.3,
+    SHIELD_STROKE: 3,
+    SHIELD_PULSE_SCALE: 1.15,
+    SHIELD_PULSE_DURATION: 400,
+    SHIELD_FADE_SCALE: 1.5,
+    SHIELD_FADE_DURATION: 300,
   },
 
   BULLET: {
@@ -131,6 +165,27 @@ export default {
     TILT_THRESHOLD_LOW: 30,
     TILT_THRESHOLD_HIGH: 100,
 
+    // Default values for movement patterns (can be overridden per-type)
+    DEFAULT_MOVEMENT_AMPLITUDE: 60,
+    DEFAULT_MOVEMENT_FREQUENCY: 3,
+    DEFAULT_DIVE_SPEED: 300,
+    DEFAULT_DIVE_DISTANCE: 200,
+    DEFAULT_DAMAGE: 10,
+
+    // Attack pattern defaults
+    BURST_COUNT: 3,
+    BURST_DELAY: 150, // ms between burst shots
+    AIMED_BULLET_SPEED: 300,
+
+    // Zigzag movement
+    ZIGZAG_INTERVAL: 500, // ms between direction changes
+    ZIGZAG_SPEED_MULT: 0.8,
+    ZIGZAG_EDGE_BUFFER: 50,
+
+    // Spawn/despawn
+    BULLET_Y_OFFSET: 20, // offset from enemy center when firing
+    OFFSCREEN_BUFFER: 50, // pixels past screen before destroy
+
     // Enemy type registry - add new types here
     // frameId corresponds to sprite atlas naming: enemy_{frameId}_{color}_{tilt}.png
     //
@@ -243,6 +298,12 @@ export default {
     WAVE_AMPLITUDE_MAX: 60,
     WAVE_FREQUENCY_MIN: 2,
     WAVE_FREQUENCY_MAX: 4,
+
+    // Visual/physics
+    HITBOX_RADIUS: 12,
+    SCALE: 1.2,
+    WARNING_FLASH_DURATION: 100,
+    DAMAGE_INVINCIBILITY: 500, // brief invincibility after mine damage
   },
 
   BOSS: {
@@ -294,6 +355,44 @@ export default {
     // Rewards
     REWARD_EXTRA_LIFE: true,
     REWARD_POWER_UP: true,
+
+    // Visual effects
+    SCALE: 0.18, // boss sprite scale (1024x1024 image)
+    IDLE_PULSE_MIN: 0.17,
+    IDLE_PULSE_MAX: 0.19,
+    IDLE_PULSE_DURATION: 1000,
+
+    // Phase change effects
+    PHASE_CHANGE_SCALE: 0.22,
+    PHASE_CHANGE_DURATION: 200,
+    PHASE_CHANGE_REPEATS: 2,
+    PHASE_CHANGE_ALPHA: 0.5,
+    PHASE_CHANGE_FLASH: 100,
+    PHASE_SHAKE_DURATION: 400,
+    PHASE_SHAKE_INTENSITY: 0.02,
+
+    // Damage effects
+    DAMAGE_SCALE: 0.21,
+    DAMAGE_DURATION: 50,
+    DAMAGE_SHAKE_DURATION: 50,
+    DAMAGE_SHAKE_INTENSITY: 0.005,
+
+    // Death sequence
+    DEATH_SHAKE_DURATION: 500,
+    DEATH_SHAKE_INTENSITY: 0.03,
+    DEATH_FLASH_INTERVAL: 80,
+    DEATH_FLASH_COUNT: 10,
+    DEATH_SPIN_ANGLE: 720,
+    DEATH_DURATION: 1500,
+
+    // Attack visual effects
+    SPRAY_TWEEN_DURATION: 150,
+    SPRAY_SHAKE_INTENSITY: 0.008,
+    AIMED_TWEEN_DURATION: 100,
+    AIMED_SPREAD: 20,
+    RING_TWEEN_DURATION: 300,
+    RING_SHAKE_INTENSITY: 0.012,
+    BULLET_Y_OFFSET: 30,
   },
 
   DIFFICULTY: {
@@ -411,6 +510,24 @@ export default {
     WEAPON_FIRE_RATE_MULT: [1, 0.75, 0.5],
     WEAPON_BULLET_COUNT: [1, 2, 3],
 
+    // Visual/physics
+    HITBOX_RADIUS: 12,
+    SCALE: 1.2,
+    PULSE_SCALE: 1.4,
+    PULSE_DURATION: 300,
+    COLLECT_SCALE: 2,
+    COLLECT_FADE_DURATION: 200,
+    DESPAWN_FADE_DURATION: 300,
+    WARNING_TIME: 2000, // start flashing this long before despawn
+    WARNING_FLASH_SPEED: 0.02,
+    OFFSCREEN_BUFFER: 50,
+
+    // Floating text
+    TEXT_X_OFFSET_MAX: 20,
+    TEXT_FONT_SIZE: '24px',
+    TEXT_RISE_DISTANCE: 60,
+    TEXT_DURATION: 1000,
+
     // Power-up type registry - add new types here
     // For weapon pickups, set weaponType to switch player's weapon
     TYPES: {
@@ -468,5 +585,32 @@ export default {
     TOUCH_INDICATOR_ALPHA: 0.3,
     DAMAGE_FLASH_DURATION: 100,
     DAMAGE_FLASH_TINT: 0xff0000,
+    BACKGROUND_SCROLL_SPEED: 0.5,
+  },
+
+  // UI font sizes and styling
+  UI: {
+    // Game Over scene
+    GAME_OVER_FONT_SIZE: '48px',
+    SCORE_FONT_SIZE: '32px',
+    STATS_FONT_SIZE: '16px',
+    HIGH_SCORE_FONT_SIZE: '24px',
+    INSTRUCTIONS_FONT_SIZE: '20px',
+    LEADERBOARD_LINE_HEIGHT: 28,
+
+    // In-game HUD (defined in UIManager)
+    HUD_FONT: '16px monospace',
+    HUD_COLOR: '#ffffff',
+  },
+
+  // Difficulty scaling formulas
+  DIFFICULTY_SCALING: {
+    SPAWN_INTERVAL_REDUCTION: 100, // ms reduction per difficulty level
+    MAX_SPAWN_REDUCTION: 200, // max spawn interval reduction
+    MIN_SPAWN_INTERVAL: 500,
+    MIN_MAX_SPAWN_INTERVAL: 1000,
+    DIFFICULTY_MULTIPLIER_STEP: 0.1, // per difficulty level
+    MINE_INTERVAL_BASE: 5000,
+    MINE_INTERVAL_REDUCTION: 300, // per difficulty level
   },
 };

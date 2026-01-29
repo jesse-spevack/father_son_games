@@ -40,7 +40,7 @@ export default class GameScene extends Phaser.Scene {
     this.player = new Player(
       this,
       this.cameras.main.centerX,
-      this.cameras.main.height - 100
+      this.cameras.main.height - GameConfig.PLAYER.SPAWN_Y_OFFSET
     );
 
     // Create enemy bullet pool
@@ -329,7 +329,7 @@ export default class GameScene extends Phaser.Scene {
 
   update() {
     // Scroll background
-    this.background.tilePositionY -= 0.5;
+    this.background.tilePositionY -= GameConfig.DISPLAY.BACKGROUND_SCROLL_SPEED;
 
     // Check for space to start
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey) && !this.gameState.gameStarted) {
@@ -443,7 +443,7 @@ export default class GameScene extends Phaser.Scene {
     this.playExplosion(this.player.x, this.player.y);
 
     // Respawn player at center bottom with invincibility
-    this.player.respawn(this.cameras.main.centerX, this.cameras.main.height - 100);
+    this.player.respawn(this.cameras.main.centerX, this.cameras.main.height - GameConfig.PLAYER.SPAWN_Y_OFFSET);
   }
 
   /**

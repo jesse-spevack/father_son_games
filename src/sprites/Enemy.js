@@ -56,14 +56,14 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.speed = config.speed;
     this.points = config.points;
     this.fireRate = config.fireRate;
-    this.damage = config.damage || 10;
+    this.damage = config.damage || GameConfig.ENEMY.DEFAULT_DAMAGE;
 
     // Movement pattern
     this.movementPattern = config.movement || 'straight';
-    this.movementAmplitude = config.movementAmplitude || 60;
-    this.movementFrequency = config.movementFrequency || 3;
-    this.diveSpeed = config.diveSpeed || 300;
-    this.diveDistance = config.diveDistance || 200;
+    this.movementAmplitude = config.movementAmplitude || GameConfig.ENEMY.DEFAULT_MOVEMENT_AMPLITUDE;
+    this.movementFrequency = config.movementFrequency || GameConfig.ENEMY.DEFAULT_MOVEMENT_FREQUENCY;
+    this.diveSpeed = config.diveSpeed || GameConfig.ENEMY.DEFAULT_DIVE_SPEED;
+    this.diveDistance = config.diveDistance || GameConfig.ENEMY.DEFAULT_DIVE_DISTANCE;
     this.isDiving = false;
     this.spawnX = x; // remember starting X for sine wave
     this.elapsedTime = 0;
@@ -71,8 +71,8 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     // Attack pattern
     this.attackPattern = config.attack || 'basic';
     this.burstCount = 0;
-    this.burstMax = 3;
-    this.burstDelay = 150; // ms between burst shots
+    this.burstMax = GameConfig.ENEMY.BURST_COUNT;
+    this.burstDelay = GameConfig.ENEMY.BURST_DELAY;
 
     // Loot table (RPG-ready)
     this.loot = config.loot || null;
@@ -139,9 +139,10 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (!this.bulletGroup) return;
 
     // Get a bullet from the pool
-    const bullet = this.bulletGroup.get(this.x, this.y + 20);
+    const yOffset = GameConfig.ENEMY.BULLET_Y_OFFSET;
+    const bullet = this.bulletGroup.get(this.x, this.y + yOffset);
     if (bullet) {
-      bullet.fire(this.x, this.y + 20);
+      bullet.fire(this.x, this.y + yOffset);
       this.lastFired = time;
     }
   }
@@ -177,13 +178,14 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
       case 'zigzag':
         // Sharp direction changes at intervals
-        const zigInterval = 500; // ms between direction changes
-        const zigSpeed = this.speed * 0.8;
+        const zigInterval = GameConfig.ENEMY.ZIGZAG_INTERVAL;
+        const zigSpeed = this.speed * GameConfig.ENEMY.ZIGZAG_SPEED_MULT;
         const direction = Math.floor(this.elapsedTime / zigInterval) % 2 === 0 ? 1 : -1;
         this.setVelocityX(zigSpeed * direction);
         this.setVelocityY(this.speed);
         // Bounce off screen edges
-        if (this.x < 50 || this.x > this.scene.cameras.main.width - 50) {
+        const edgeBuffer = GameConfig.ENEMY.ZIGZAG_EDGE_BUFFER;
+        if (this.x < edgeBuffer || this.x > this.scene.cameras.main.width - edgeBuffer) {
           this.spawnX = this.x; // reset reference
         }
         break;
@@ -233,16 +235,18 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
       case 'aimed':
         // Fire toward player position
         if (this.scene.player) {
-          const bullet = this.bulletGroup.get(this.x, this.y + 20);
+          const yOffset = GameConfig.ENEMY.BULLET_Y_OFFSET;
+          const bulletSpeed = GameConfig.ENEMY.AIMED_BULLET_SPEED;
+          const bullet = this.bulletGroup.get(this.x, this.y + yOffset);
           if (bullet) {
             const angle = Phaser.Math.Angle.Between(
               this.x, this.y,
               this.scene.player.x, this.scene.player.y
             );
-            bullet.fire(this.x, this.y + 20);
+            bullet.fire(this.x, this.y + yOffset);
             bullet.setVelocity(
-              Math.cos(angle) * 300,
-              Math.sin(angle) * 300
+              Math.cos(angle) * bulletSpeed,
+              Math.sin(angle) * bulletSpeed
             );
             this.lastFired = time;
           }
@@ -252,9 +256,10 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
       case 'burst':
         // Fire 3 quick shots then pause
         if (this.burstCount < this.burstMax) {
-          const bullet = this.bulletGroup.get(this.x, this.y + 20);
+          const yOffset = GameConfig.ENEMY.BULLET_Y_OFFSET;
+          const bullet = this.bulletGroup.get(this.x, this.y + yOffset);
           if (bullet) {
-            bullet.fire(this.x, this.y + 20);
+            bullet.fire(this.x, this.y + yOffset);
             this.burstCount++;
             this.lastFired = time - this.fireRate + this.burstDelay; // short delay for next burst shot
           }
@@ -294,7 +299,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Destroy if past bottom of screen (with buffer)
-    if (this.y > this.scene.cameras.main.height + 50) {
+    if (this.y > this.scene.cameras.main.height + GameConfig.ENEMY.OFFSCREEN_BUFFER) {
       this.destroy();
     }
   }

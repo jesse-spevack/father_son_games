@@ -17,7 +17,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
 
     // Add exhaust flame behind player
-    this.exhaust = scene.add.sprite(x, y + 35, 'sprites', 'exhaust_01.png');
+    this.exhaust = scene.add.sprite(x, y + GameConfig.PLAYER.EXHAUST_Y_OFFSET, 'sprites', 'exhaust_01.png');
     this.exhaust.play('exhaust');
     this.exhaust.setDepth(-1); // Behind player
 
@@ -41,7 +41,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Configure physics body
     this.setCollideWorldBounds(true);
-    this.body.setSize(this.width * 0.8, this.height * 0.8); // Slightly smaller hitbox
+    const hitboxScale = GameConfig.PLAYER.HITBOX_SCALE;
+    this.body.setSize(this.width * hitboxScale, this.height * hitboxScale);
 
     // Tilt frame names for visual feedback
     this.tiltFrames = {
@@ -89,7 +90,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Keep exhaust positioned behind player
     this.exhaust.x = this.x;
-    this.exhaust.y = this.y + 35;
+    this.exhaust.y = this.y + GameConfig.PLAYER.EXHAUST_Y_OFFSET;
 
     // Keep shield positioned on player
     if (this.shieldGraphic) {
@@ -173,8 +174,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    */
   updateTilt() {
     const vx = this.body.velocity.x;
-    const threshold = this.speed * 0.3; // 30% of max speed for initial tilt
-    const maxThreshold = this.speed * 0.7; // 70% for max tilt
+    const threshold = this.speed * GameConfig.PLAYER.TILT_THRESHOLD_LOW;
+    const maxThreshold = this.speed * GameConfig.PLAYER.TILT_THRESHOLD_HIGH;
 
     if (vx < -maxThreshold) {
       this.setFrame(this.tiltFrames.left2);
@@ -200,10 +201,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Flash effect for damage feedback
     this.scene.tweens.add({
       targets: this,
-      alpha: 0.5,
-      duration: 100,
+      alpha: GameConfig.PLAYER.DAMAGE_FLASH_ALPHA,
+      duration: GameConfig.PLAYER.DAMAGE_FLASH_DURATION,
       yoyo: true,
-      repeat: 2,
+      repeat: GameConfig.PLAYER.DAMAGE_FLASH_REPEATS,
     });
 
     return this.health > 0;
@@ -241,12 +242,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.isInvincible = true;
     this.setAlpha(0.5);
 
-    // Flash effect: alpha 0.3 to 0.8, duration 100ms, repeat 15, yoyo
+    // Flash effect during invincibility
     this.scene.tweens.add({
       targets: this,
-      alpha: { from: 0.3, to: 0.8 },
+      alpha: {
+        from: GameConfig.PLAYER.INVINCIBILITY_ALPHA_MIN,
+        to: GameConfig.PLAYER.INVINCIBILITY_ALPHA_MAX
+      },
       duration: 100,
-      repeat: 15,
+      repeat: GameConfig.PLAYER.INVINCIBILITY_FLASH_COUNT,
       yoyo: true,
       onComplete: () => {
         this.isInvincible = false;
@@ -298,9 +302,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       // Visual feedback
       this.scene.tweens.add({
         targets: this,
-        scaleX: 1.2,
-        scaleY: 1.2,
-        duration: 100,
+        scaleX: GameConfig.PLAYER.UPGRADE_SCALE,
+        scaleY: GameConfig.PLAYER.UPGRADE_SCALE,
+        duration: GameConfig.PLAYER.UPGRADE_DURATION,
         yoyo: true
       });
     }
@@ -328,9 +332,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Visual feedback
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.3,
-      scaleY: 1.3,
-      duration: 150,
+      scaleX: GameConfig.PLAYER.WEAPON_SWITCH_SCALE,
+      scaleY: GameConfig.PLAYER.WEAPON_SWITCH_SCALE,
+      duration: GameConfig.PLAYER.WEAPON_SWITCH_DURATION,
       yoyo: true
     });
   }
@@ -385,7 +389,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     console.log(`Speed boost active! Speed: ${this.speed}`);
 
     // Visual feedback - blue tint
-    this.setTint(0x88ccff);
+    this.setTint(GameConfig.PLAYER.SPEED_BOOST_TINT);
 
     // End boost after duration
     this.speedBoostTimer = this.scene.time.delayedCall(duration, () => {
@@ -414,17 +418,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     console.log('Shield activated!');
 
     // Create shield bubble graphic
-    this.shieldGraphic = this.scene.add.circle(this.x, this.y, 40, 0xaa44ff, 0.3);
-    this.shieldGraphic.setStrokeStyle(3, 0xaa44ff, 0.8);
+    const cfg = GameConfig.PLAYER;
+    this.shieldGraphic = this.scene.add.circle(this.x, this.y, cfg.SHIELD_RADIUS, cfg.SHIELD_COLOR, cfg.SHIELD_ALPHA);
+    this.shieldGraphic.setStrokeStyle(cfg.SHIELD_STROKE, cfg.SHIELD_COLOR, 0.8);
     this.shieldGraphic.setDepth(this.depth - 1);
 
     // Pulsing effect on shield
     this.scene.tweens.add({
       targets: this.shieldGraphic,
-      scaleX: 1.15,
-      scaleY: 1.15,
+      scaleX: cfg.SHIELD_PULSE_SCALE,
+      scaleY: cfg.SHIELD_PULSE_SCALE,
       alpha: 0.5,
-      duration: 400,
+      duration: cfg.SHIELD_PULSE_DURATION,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
@@ -445,12 +450,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.shieldGraphic) {
       // Fade out shield
+      const cfg = GameConfig.PLAYER;
       this.scene.tweens.add({
         targets: this.shieldGraphic,
         alpha: 0,
-        scaleX: 1.5,
-        scaleY: 1.5,
-        duration: 300,
+        scaleX: cfg.SHIELD_FADE_SCALE,
+        scaleY: cfg.SHIELD_FADE_SCALE,
+        duration: cfg.SHIELD_FADE_DURATION,
         onComplete: () => {
           if (this.shieldGraphic) {
             this.shieldGraphic.destroy();
