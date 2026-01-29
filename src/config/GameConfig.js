@@ -491,6 +491,55 @@ const GameConfig = {
     RING_TWEEN_DURATION: 300,
     RING_SHAKE_INTENSITY: 0.012,
     BULLET_Y_OFFSET: 30,
+
+    // Boss type registry - add new boss types here
+    // Each type can override default values above
+    // Attacks: 'spray', 'aimed', 'ring', 'summon'
+    TYPES: {
+      megaship: {
+        name: 'Megaship Alpha',
+        texture: 'boss_megaship',
+        scale: 0.18,
+        health: 300,
+        points: 5000,
+        speed: 80,
+        attacks: ['spray', 'aimed', 'summon'],
+        phase3Attacks: ['spray', 'aimed', 'ring', 'summon'],
+        summonTypes: ['fighter', 'heavy'],
+        tint: null, // no tint
+      },
+      destroyer: {
+        name: 'Destroyer Class',
+        texture: 'boss_destroyer',
+        scale: 0.15,
+        health: 400,
+        points: 7500,
+        speed: 60,
+        attacks: ['spray', 'ring'],
+        phase3Attacks: ['spray', 'ring', 'aimed'],
+        summonTypes: ['bomber'],
+        sprayCooldownMult: 0.8, // faster spray
+        ringBulletCount: 16, // more bullets
+        tint: 0xff6666, // reddish tint
+      },
+      carrier: {
+        name: 'Carrier Behemoth',
+        texture: 'boss_carrier',
+        scale: 0.20,
+        health: 500,
+        points: 10000,
+        speed: 40,
+        attacks: ['aimed', 'summon'],
+        phase3Attacks: ['aimed', 'summon', 'spray'],
+        summonTypes: ['fighter', 'scout', 'heavy'],
+        summonCooldownMult: 0.6, // summons more often
+        summonCount: 5, // summons more enemies
+        tint: 0x66ff66, // greenish tint
+      },
+    },
+
+    // Boss spawn order (cycles through)
+    SPAWN_ORDER: ['megaship', 'destroyer', 'carrier'],
   },
 
   DIFFICULTY: {

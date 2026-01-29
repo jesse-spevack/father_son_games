@@ -25,12 +25,33 @@ export default class BossManager {
     this.spawnInterval = GameConfig.BOSS.SPAWN_INTERVAL;
     this.isFirstBoss = true;
 
+    // Boss type cycling
+    this.spawnOrder = GameConfig.BOSS.SPAWN_ORDER || ['megaship'];
+    this.currentBossIndex = 0;
+    this.bossesDefeated = 0;
+
     // Fight state
     this.isBossFight = false;
 
     // Listen for boss events
     this.scene.events.on('bossDefeated', this.onBossDefeated, this);
     this.scene.events.on('bossSummon', this.onBossSummon, this);
+  }
+
+  /**
+   * Get the next boss type to spawn
+   * @returns {string} Boss type key
+   */
+  getNextBossType() {
+    const type = this.spawnOrder[this.currentBossIndex];
+    return type;
+  }
+
+  /**
+   * Advance to next boss type in rotation
+   */
+  advanceBossType() {
+    this.currentBossIndex = (this.currentBossIndex + 1) % this.spawnOrder.length;
   }
 
   /**
@@ -70,9 +91,12 @@ export default class BossManager {
 
   /**
    * Spawn the boss
+   * @param {string} [forceType] - Optional type to force spawn (for dev console)
    */
-  spawnBoss() {
-    console.log('Boss spawning!');
+  spawnBoss(forceType = null) {
+    // Determine boss type
+    const bossType = forceType || this.getNextBossType();
+    console.log(`Boss spawning: ${bossType}!`);
 
     // Reset timer
     this.spawnTimer = 0;
@@ -82,7 +106,7 @@ export default class BossManager {
     const x = this.scene.cameras.main.centerX;
     const y = -100; // Start above screen
 
-    this.currentBoss = new Boss(this.scene, x, y);
+    this.currentBoss = new Boss(this.scene, x, y, bossType);
     this.currentBoss.setBulletGroup(this.enemyBullets);
 
     // Enter boss fight state
@@ -96,7 +120,7 @@ export default class BossManager {
     // Clear existing enemies (optional - gives player breathing room)
     // this.clearEnemies();
 
-    // Notify UI
+    // Notify UI with boss name
     this.scene.events.emit('bossSpawned', this.currentBoss);
 
     // Camera shake for dramatic entrance
@@ -147,10 +171,14 @@ export default class BossManager {
    * @param {Boss} boss
    */
   onBossDefeated(boss) {
-    console.log('Boss defeated!');
+    console.log(`Boss defeated: ${boss?.bossName || 'Unknown'}!`);
 
     // Guard against null boss (edge case if destroyed unexpectedly)
     if (!boss) return;
+
+    // Track bosses defeated and advance to next type
+    this.bossesDefeated++;
+    this.advanceBossType();
 
     // Award points via event
     this.scene.events.emit('addScore', boss.points);

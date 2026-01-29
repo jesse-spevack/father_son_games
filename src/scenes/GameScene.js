@@ -155,7 +155,7 @@ export default class GameScene extends Phaser.Scene {
   setupBossEvents() {
     // When boss spawns, show health bar and setup collisions
     this.events.on('bossSpawned', (boss) => {
-      this.uiManager.showBossHealth('MEGASHIP BOSS 1', boss.maxHealth);
+      this.uiManager.showBossHealth(boss.bossName, boss.maxHealth);
       this.collisionManager.setupBossCollisions(boss);
     });
 

@@ -3,33 +3,68 @@ import GameConfig from '../config/GameConfig.js';
 import { SprayAttack, AimedAttack, RingAttack, SummonAttack } from './BossAttacks.js';
 
 /**
- * Boss enemy class - Megaship Boss 1
+ * Boss enemy class - supports multiple boss types from config.
  * Multi-phase boss with different attack patterns per phase.
  * Uses single sprite frame with code-based visual effects.
- * Phase 1 (100-66%): Spray + aimed attacks
- * Phase 2 (66-33%): + summons fighters
- * Phase 3 (33-0%): + summons heavies, faster attacks
+ * Phase 1 (100-66%): Basic attacks
+ * Phase 2 (66-33%): + more attacks
+ * Phase 3 (33-0%): + all attacks, faster cooldowns
  */
 export default class Boss extends Phaser.GameObjects.Sprite {
-  constructor(scene, x, y) {
-    // Use the space boss sprite
-    super(scene, x, y, 'space_boss');
+  /**
+   * Get boss type config from registry
+   * @param {string} type - Boss type key
+   * @returns {Object} Type config
+   */
+  static getTypeConfig(type) {
+    return GameConfig.BOSS.TYPES[type];
+  }
+
+  /**
+   * Get all boss type keys
+   * @returns {string[]}
+   */
+  static getTypeKeys() {
+    return Object.keys(GameConfig.BOSS.TYPES);
+  }
+
+  /**
+   * Create a boss of the specified type
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {string} [type='megaship'] - Boss type from BOSS.TYPES
+   */
+  constructor(scene, x, y, type = 'megaship') {
+    // Get type config
+    const typeConfig = Boss.getTypeConfig(type);
+    if (!typeConfig) {
+      console.warn(`Unknown boss type: ${type}, defaulting to megaship`);
+      type = 'megaship';
+    }
+    const tc = typeConfig || GameConfig.BOSS.TYPES.megaship;
+
+    // Use the boss sprite for this type
+    super(scene, x, y, tc.texture);
 
     // Add to scene
     scene.add.existing(this);
 
-    // Store scene reference
+    // Store scene and type reference
     this.scene = scene;
+    this.bossType = type;
+    this.typeConfig = tc;
 
-    // Boss stats from config
+    // Boss stats from type config (with defaults from BOSS)
     const cfg = GameConfig.BOSS;
-    this.maxHealth = cfg.MAX_HEALTH;
+    this.maxHealth = tc.health || cfg.MAX_HEALTH;
     this.health = this.maxHealth;
-    this.points = cfg.POINTS;
+    this.points = tc.points || cfg.POINTS;
     this.collisionDamage = cfg.COLLISION_DAMAGE;
+    this.bossName = tc.name || 'Unknown Boss';
 
-    // Movement properties
-    this.speed = cfg.SPEED;
+    // Movement properties (type can override speed)
+    this.speed = tc.speed || cfg.SPEED;
     this.enterSpeed = cfg.ENTER_SPEED;
     this.targetY = cfg.Y_POSITION;
     this.movementRange = cfg.MOVEMENT_RANGE;
@@ -41,11 +76,11 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.phase3Threshold = cfg.PHASE_3_THRESHOLD;
     this.currentPhase = 1;
 
-    // Attack timing
-    this.sprayCooldown = cfg.SPRAY_COOLDOWN;
-    this.aimedCooldown = cfg.AIMED_COOLDOWN;
-    this.summonCooldown = cfg.SUMMON_COOLDOWN;
-    this.ringCooldown = cfg.RING_COOLDOWN;
+    // Attack timing (type can have cooldown multipliers)
+    this.sprayCooldown = cfg.SPRAY_COOLDOWN * (tc.sprayCooldownMult || 1);
+    this.aimedCooldown = cfg.AIMED_COOLDOWN * (tc.aimedCooldownMult || 1);
+    this.summonCooldown = cfg.SUMMON_COOLDOWN * (tc.summonCooldownMult || 1);
+    this.ringCooldown = cfg.RING_COOLDOWN * (tc.ringCooldownMult || 1);
     this.phase3SpeedMult = cfg.PHASE_3_SPEED_MULT;
 
     this.lastSprayTime = 0;
@@ -53,16 +88,21 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.lastSummonTime = 0;
     this.lastRingTime = 0;
 
-    // Attack parameters
+    // Attack parameters (type can override)
     this.sprayBulletCount = cfg.SPRAY_BULLET_COUNT;
     this.sprayAngle = cfg.SPRAY_ANGLE;
     this.sprayBulletSpeed = cfg.SPRAY_BULLET_SPEED;
     this.aimedBulletCount = cfg.AIMED_BULLET_COUNT;
     this.aimedBulletSpeed = cfg.AIMED_BULLET_SPEED;
-    this.ringBulletCount = cfg.RING_BULLET_COUNT;
+    this.ringBulletCount = tc.ringBulletCount || cfg.RING_BULLET_COUNT;
     this.ringBulletSpeed = cfg.RING_BULLET_SPEED;
-    this.summonFighters = cfg.SUMMON_FIGHTERS;
-    this.summonHeavies = cfg.SUMMON_HEAVIES;
+    this.summonFighters = tc.summonCount || cfg.SUMMON_FIGHTERS;
+    this.summonHeavies = tc.summonCount || cfg.SUMMON_HEAVIES;
+
+    // Type-specific attack lists
+    this.attacks = tc.attacks || ['spray', 'aimed'];
+    this.phase3Attacks = tc.phase3Attacks || ['spray', 'aimed', 'ring'];
+    this.summonTypes = tc.summonTypes || ['fighter', 'heavy'];
 
     // Bullet group reference (set by BossManager)
     this.bulletGroup = null;
@@ -76,12 +116,21 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     this.body.setSize(this.width * 0.8, this.height * 0.6);
     this.body.setOffset(this.width * 0.1, this.height * 0.2);
 
-    // Scale the boss (image is 1024x1024, scale to ~180px)
-    this.setScale(0.18);
+    // Scale the boss (type can override)
+    this.bossScale = tc.scale || cfg.SCALE;
+    this.setScale(this.bossScale);
+
+    // Apply type tint if specified
+    if (tc.tint) {
+      this.setTint(tc.tint);
+      this.baseTint = tc.tint;
+    } else {
+      this.baseTint = 0xffffff;
+    }
 
     // Phase colors for visual feedback
     this.phaseColors = {
-      1: 0xffffff, // Normal
+      1: this.baseTint,
       2: 0xffaa00, // Orange - phase 2
       3: 0xff4444  // Red - phase 3
     };
@@ -94,10 +143,11 @@ export default class Boss extends Phaser.GameObjects.Sprite {
    * Create a gentle pulsing effect for idle state
    */
   startIdlePulse() {
+    const baseScale = this.bossScale;
     this.idleTween = this.scene.tweens.add({
       targets: this,
-      scaleX: 0.19,
-      scaleY: 0.17,
+      scaleX: baseScale * 1.05,
+      scaleY: baseScale * 0.95,
       duration: 1000,
       yoyo: true,
       repeat: -1,
@@ -111,7 +161,7 @@ export default class Boss extends Phaser.GameObjects.Sprite {
   stopIdlePulse() {
     if (this.idleTween) {
       this.idleTween.stop();
-      this.setScale(0.18);
+      this.setScale(this.bossScale);
     }
   }
 
@@ -345,6 +395,16 @@ export default class Boss extends Phaser.GameObjects.Sprite {
   }
 
   /**
+   * Check if this boss type has a specific attack
+   * @param {string} attackName
+   * @returns {boolean}
+   */
+  hasAttack(attackName) {
+    const attackList = this.currentPhase === 3 ? this.phase3Attacks : this.attacks;
+    return attackList.includes(attackName);
+  }
+
+  /**
    * Handle attack patterns based on phase and cooldowns.
    * Uses attack strategies from BossAttacks.js
    * @param {number} time
@@ -354,29 +414,29 @@ export default class Boss extends Phaser.GameObjects.Sprite {
 
     const cooldownMult = this.currentPhase === 3 ? this.phase3SpeedMult : 1;
 
-    // Spray attack (all phases)
-    if (time - this.lastSprayTime >= SprayAttack.cooldown * cooldownMult) {
+    // Spray attack
+    if (this.hasAttack('spray') && time - this.lastSprayTime >= this.sprayCooldown * cooldownMult) {
       SprayAttack.execute(this);
       this.lastSprayTime = time;
       return;
     }
 
-    // Aimed attack (all phases)
-    if (time - this.lastAimedTime >= AimedAttack.cooldown * cooldownMult) {
+    // Aimed attack
+    if (this.hasAttack('aimed') && time - this.lastAimedTime >= this.aimedCooldown * cooldownMult) {
       AimedAttack.execute(this);
       this.lastAimedTime = time;
       return;
     }
 
     // Summon attack (phase 2+)
-    if (this.currentPhase >= 2 && time - this.lastSummonTime >= SummonAttack.cooldown * cooldownMult) {
+    if (this.currentPhase >= 2 && this.hasAttack('summon') && time - this.lastSummonTime >= this.summonCooldown * cooldownMult) {
       SummonAttack.execute(this);
       this.lastSummonTime = time;
       return;
     }
 
-    // Ring attack (phase 3 only) - bullet hell!
-    if (this.currentPhase === 3 && time - this.lastRingTime >= RingAttack.cooldown * cooldownMult) {
+    // Ring attack
+    if (this.hasAttack('ring') && time - this.lastRingTime >= this.ringCooldown * cooldownMult) {
       RingAttack.execute(this);
       this.lastRingTime = time;
     }

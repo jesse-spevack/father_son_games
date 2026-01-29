@@ -66,8 +66,10 @@ export default class BootScene extends Phaser.Scene {
   }
 
   loadBossSprites() {
-    // Single space boss sprite - visual effects handled by code
-    this.load.image('space_boss', 'assets/Boss/space_boss.png');
+    // Boss sprites - each boss type has its own image
+    this.load.image('boss_megaship', 'assets/Boss/space_boss.png');
+    this.load.image('boss_destroyer', 'assets/boss-2.png');
+    this.load.image('boss_carrier', 'assets/boss-3.jpg');
   }
 
   create() {
