@@ -104,8 +104,8 @@ export default class CollisionManager {
     bullet.setActive(false);
     bullet.setVisible(false);
 
-    // Play explosion at enemy position
-    this.scene.playExplosion(enemy.x, enemy.y);
+    // Emit explosion event (scene handles VFX)
+    this.scene.events.emit('playExplosion', { x: enemy.x, y: enemy.y });
 
     // Damage enemy and add score if killed
     if (enemy.takeDamage(1)) {
@@ -170,7 +170,7 @@ export default class CollisionManager {
     bullet.setVisible(false);
 
     if (!this.scene.player?.takeDamage(10)) {
-      this.scene.loseLife();
+      this.scene.events.emit('loseLife');
     }
   }
 
@@ -182,11 +182,11 @@ export default class CollisionManager {
   enemyHitPlayer(player, enemy) {
     if (this.scene.player?.isInvincible) return;
 
-    this.scene.playExplosion(enemy.x, enemy.y);
+    this.scene.events.emit('playExplosion', { x: enemy.x, y: enemy.y });
     enemy.destroy();
 
     if (!this.scene.player?.takeDamage(25)) {
-      this.scene.loseLife();
+      this.scene.events.emit('loseLife');
     }
   }
 
@@ -263,7 +263,7 @@ export default class CollisionManager {
     const damage = GameConfig.BOSS.COLLISION_DAMAGE;
 
     if (!this.scene.player?.takeDamage(damage)) {
-      this.scene.loseLife();
+      this.scene.events.emit('loseLife');
     } else {
       // Brief invincibility after boss collision
       this.scene.player?.makeInvincible(1000);

@@ -2,12 +2,13 @@ import BaseProjectile from './BaseProjectile';
 
 /**
  * Enemy bullet class - plasma projectiles shot by enemies
- * Moves downward toward the player
+ * Moves downward toward the player.
+ * Config loaded from GameConfig.PROJECTILES.enemy_bullet
  */
 export default class EnemyBullet extends BaseProjectile {
   constructor(scene, x, y) {
-    // Enemy bullets move downward (direction = 1) at speed 300
-    super(scene, x, y, 'sprites', 'plasma_1.png', 300, 1);
+    const config = BaseProjectile.getTypeConfig('enemy_bullet');
+    super(scene, x, y, config.texture, config.frame, config.speed, config.direction);
   }
 
   /**

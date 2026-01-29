@@ -22,6 +22,34 @@ export default {
     POOL_SIZE: 50,
   },
 
+  // Projectile registry - add new weapon types here
+  PROJECTILES: {
+    player_bullet: {
+      texture: 'sprites',
+      frame: 'vulcan_1.png',
+      speed: 500,
+      direction: -1, // upward
+    },
+    player_laser: {
+      texture: 'sprites',
+      frame: 'laser_1.png',
+      speed: 700,
+      direction: -1,
+    },
+    enemy_bullet: {
+      texture: 'sprites',
+      frame: 'plasma_1.png',
+      speed: 300,
+      direction: 1, // downward
+    },
+    enemy_plasma: {
+      texture: 'sprites',
+      frame: 'proton_01.png',
+      speed: 250,
+      direction: 1,
+    },
+  },
+
   ENEMY: {
     // Tilt thresholds for visual feedback
     TILT_THRESHOLD_LOW: 30,
@@ -125,6 +153,66 @@ export default {
     SPAWN_MARGIN: 60, // keep formations away from edges
     SHIP_SPACING: 50,
     FIGHTER_SPAWN_WEIGHT: 0.7, // 70% chance of fighter vs heavy
+  },
+
+  // Formation registry - positions are in unit spacing (multiplied by SHIP_SPACING)
+  // Add new formations here - no code changes needed
+  FORMATIONS: {
+    v: {
+      // V-formation: lead ship with two pairs spreading back
+      positions: [
+        { x: 0, y: 0 },      // Lead
+        { x: -1, y: 1 },     // Left wing
+        { x: 1, y: 1 },      // Right wing
+        { x: -2, y: 2 },     // Far left
+        { x: 2, y: 2 },      // Far right
+      ],
+      types: ['fighter', 'heavy'],
+    },
+    line: {
+      // Horizontal line of 3-5 ships (randomized at spawn)
+      positions: [
+        { x: -2, y: 0 },
+        { x: -1, y: 0 },
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+      ],
+      minShips: 3,
+      maxShips: 5,
+      types: ['fighter', 'heavy'],
+    },
+    diamond: {
+      // Diamond shape
+      positions: [
+        { x: 0, y: 0 },      // Top
+        { x: -1, y: 1 },     // Left
+        { x: 1, y: 1 },      // Right
+        { x: 0, y: 2 },      // Bottom
+      ],
+      types: ['fighter', 'heavy'],
+    },
+    arrow: {
+      // Arrow pointing down
+      positions: [
+        { x: 0, y: 0 },      // Tip
+        { x: -1, y: -1 },    // Left back
+        { x: 1, y: -1 },     // Right back
+        { x: -2, y: -2 },    // Far left back
+        { x: 2, y: -2 },     // Far right back
+      ],
+      types: ['fighter'],
+    },
+    box: {
+      // Square formation
+      positions: [
+        { x: -1, y: 0 },
+        { x: 1, y: 0 },
+        { x: -1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      types: ['heavy'],
+    },
   },
 
   POWER_UP: {

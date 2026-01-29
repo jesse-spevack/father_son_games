@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import GameConfig from '../config/GameConfig.js';
+import { SprayAttack, AimedAttack, RingAttack, SummonAttack } from './BossAttacks.js';
 
 /**
  * Boss enemy class - Megaship Boss 1
@@ -269,41 +270,20 @@ export default class Boss extends Phaser.GameObjects.Sprite {
    * Create sprite explosion effects on death
    */
   createDeathExplosion() {
-    // Capture references before boss is destroyed
-    const scene = this.scene;
-    const bossX = this.x;
-    const bossY = this.y;
+    // Use VFX manager if available, otherwise fallback
+    if (this.scene.vfx) {
+      const offsets = [
+        { x: 0, y: 0, delay: 0, scale: 2 },
+        { x: -40, y: -30, delay: 100, scale: 1.5 },
+        { x: 40, y: -30, delay: 150, scale: 1.5 },
+        { x: -30, y: 30, delay: 200, scale: 1.2 },
+        { x: 30, y: 30, delay: 250, scale: 1.2 },
+        { x: 0, y: -50, delay: 300, scale: 1.8 },
+      ];
 
-    // Create multiple sprite explosions at different positions
-    const explosionTypes = ['explosion1', 'explosion2', 'explosion3'];
-    const offsets = [
-      { x: 0, y: 0, delay: 0, scale: 2 },
-      { x: -40, y: -30, delay: 100, scale: 1.5 },
-      { x: 40, y: -30, delay: 150, scale: 1.5 },
-      { x: -30, y: 30, delay: 200, scale: 1.2 },
-      { x: 30, y: 30, delay: 250, scale: 1.2 },
-      { x: 0, y: -50, delay: 300, scale: 1.8 },
-    ];
-
-    offsets.forEach((offset, i) => {
-      scene.time.delayedCall(offset.delay, () => {
-        const explosionType = explosionTypes[i % explosionTypes.length];
-        const explosion = scene.add.sprite(
-          bossX + offset.x,
-          bossY + offset.y,
-          'sprites',
-          'explosion_1_01.png'
-        );
-        explosion.setScale(offset.scale);
-        explosion.play(explosionType);
-        explosion.once('animationcomplete', () => {
-          explosion.destroy();
-        });
-      });
-    });
-
-    // Flash the screen
-    scene.cameras.main.flash(300, 255, 200, 100);
+      this.scene.vfx.multiExplosion(this.x, this.y, offsets);
+      this.scene.vfx.screenFlash(300, 255, 200, 100);
+    }
   }
 
   /**
@@ -365,7 +345,8 @@ export default class Boss extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Handle attack patterns based on phase and cooldowns
+   * Handle attack patterns based on phase and cooldowns.
+   * Uses attack strategies from BossAttacks.js
    * @param {number} time
    */
   updateAttacks(time) {
@@ -374,193 +355,30 @@ export default class Boss extends Phaser.GameObjects.Sprite {
     const cooldownMult = this.currentPhase === 3 ? this.phase3SpeedMult : 1;
 
     // Spray attack (all phases)
-    if (time - this.lastSprayTime >= this.sprayCooldown * cooldownMult) {
-      this.sprayAttack();
+    if (time - this.lastSprayTime >= SprayAttack.cooldown * cooldownMult) {
+      SprayAttack.execute(this);
       this.lastSprayTime = time;
       return;
     }
 
     // Aimed attack (all phases)
-    if (time - this.lastAimedTime >= this.aimedCooldown * cooldownMult) {
-      this.aimedAttack();
+    if (time - this.lastAimedTime >= AimedAttack.cooldown * cooldownMult) {
+      AimedAttack.execute(this);
       this.lastAimedTime = time;
       return;
     }
 
     // Summon attack (phase 2+)
-    if (this.currentPhase >= 2 && time - this.lastSummonTime >= this.summonCooldown * cooldownMult) {
-      this.summonAttack();
+    if (this.currentPhase >= 2 && time - this.lastSummonTime >= SummonAttack.cooldown * cooldownMult) {
+      SummonAttack.execute(this);
       this.lastSummonTime = time;
       return;
     }
 
     // Ring attack (phase 3 only) - bullet hell!
-    if (this.currentPhase === 3 && time - this.lastRingTime >= this.ringCooldown * cooldownMult) {
-      this.ringAttack();
+    if (this.currentPhase === 3 && time - this.lastRingTime >= RingAttack.cooldown * cooldownMult) {
+      RingAttack.execute(this);
       this.lastRingTime = time;
     }
-  }
-
-  /**
-   * Fire a spread of bullets in a fan pattern
-   */
-  sprayAttack() {
-    this.isAttacking = true;
-    this.stopIdlePulse();
-
-    // Attack windup - quick scale up
-    this.scene.tweens.add({
-      targets: this,
-      scaleX: 0.22,
-      scaleY: 0.22,
-      duration: 150,
-      yoyo: true,
-      onYoyo: () => {
-        // Fire bullets at peak of windup
-        if (!this.active || this.isDying) return;
-
-        const angleStep = this.sprayAngle / (this.sprayBulletCount - 1);
-        const startAngle = 90 - this.sprayAngle / 2; // 90 = straight down
-
-        // Screen shake on spray
-        this.scene.cameras.main.shake(100, 0.008);
-
-        for (let i = 0; i < this.sprayBulletCount; i++) {
-          const angle = startAngle + i * angleStep;
-          const radians = Phaser.Math.DegToRad(angle);
-
-          const bullet = this.bulletGroup.get(this.x, this.y + 30);
-          if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
-            bullet.setPosition(this.x, this.y + 30);
-            bullet.setVelocity(
-              Math.cos(radians) * this.sprayBulletSpeed,
-              Math.sin(radians) * this.sprayBulletSpeed
-            );
-          }
-        }
-      },
-      onComplete: () => {
-        this.isAttacking = false;
-        if (!this.isDying) this.resumeIdlePulse();
-      }
-    });
-  }
-
-  /**
-   * Fire bullets aimed at player position
-   */
-  aimedAttack() {
-    const player = this.scene.player;
-    if (!player || !player.active) return;
-
-    this.isAttacking = true;
-    this.stopIdlePulse();
-
-    // Quick horizontal stretch for aimed attack
-    this.scene.tweens.add({
-      targets: this,
-      scaleX: 0.22,
-      scaleY: 0.15,
-      duration: 100,
-      yoyo: true,
-      onYoyo: () => {
-        if (!this.active || this.isDying) return;
-
-        // Re-check player exists (could have been destroyed since attack started)
-        const currentPlayer = this.scene?.player;
-        if (!currentPlayer?.active) return;
-
-        for (let i = 0; i < this.aimedBulletCount; i++) {
-          // Add slight spread for multiple bullets
-          const spread = (i - (this.aimedBulletCount - 1) / 2) * 20;
-
-          const bullet = this.bulletGroup.get(this.x + spread, this.y + 30);
-          if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
-            bullet.setPosition(this.x + spread, this.y + 30);
-
-            // Calculate angle to player
-            const angle = Phaser.Math.Angle.Between(
-              this.x + spread, this.y + 30,
-              currentPlayer.x, currentPlayer.y
-            );
-
-            bullet.setVelocity(
-              Math.cos(angle) * this.aimedBulletSpeed,
-              Math.sin(angle) * this.aimedBulletSpeed
-            );
-          }
-        }
-      },
-      onComplete: () => {
-        this.isAttacking = false;
-        if (!this.isDying) this.resumeIdlePulse();
-      }
-    });
-  }
-
-  /**
-   * Summon enemy reinforcements
-   */
-  summonAttack() {
-    // Emit event for BossManager to handle spawning
-    const count = this.currentPhase === 3 ? this.summonHeavies : this.summonFighters;
-    const type = this.currentPhase === 3 ? 'heavy' : 'fighter';
-
-    this.scene.events.emit('bossSummon', { count, type });
-  }
-
-  /**
-   * Fire bullets in a 360-degree ring pattern (phase 3 bullet hell)
-   */
-  ringAttack() {
-    this.isAttacking = true;
-    this.stopIdlePulse();
-
-    // Dramatic windup - boss glows and pulses
-    this.setTint(0xff00ff); // Purple glow
-
-    this.scene.tweens.add({
-      targets: this,
-      scaleX: 0.24,
-      scaleY: 0.24,
-      duration: 300,
-      yoyo: true,
-      onYoyo: () => {
-        if (!this.active || this.isDying) return;
-
-        // Big screen shake for ring attack
-        this.scene.cameras.main.shake(150, 0.012);
-
-        // Fire bullets in all directions
-        const angleStep = 360 / this.ringBulletCount;
-
-        for (let i = 0; i < this.ringBulletCount; i++) {
-          const angle = i * angleStep;
-          const radians = Phaser.Math.DegToRad(angle);
-
-          const bullet = this.bulletGroup.get(this.x, this.y);
-          if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
-            bullet.setPosition(this.x, this.y);
-            bullet.setVelocity(
-              Math.cos(radians) * this.ringBulletSpeed,
-              Math.sin(radians) * this.ringBulletSpeed
-            );
-          }
-        }
-      },
-      onComplete: () => {
-        this.isAttacking = false;
-        if (!this.isDying) {
-          this.setTint(this.phaseColors[this.currentPhase]);
-          this.resumeIdlePulse();
-        }
-      }
-    });
   }
 }

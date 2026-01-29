@@ -64,6 +64,26 @@ export default class EnemySpawner {
   }
 
   /**
+   * Get a random enemy type from allowed types for a formation
+   * @param {string[]} allowedTypes - Array of allowed type keys
+   * @returns {string} Enemy type key
+   */
+  getRandomTypeFrom(allowedTypes) {
+    if (!allowedTypes || allowedTypes.length === 0) {
+      return this.getRandomType();
+    }
+    return Phaser.Math.RND.pick(allowedTypes);
+  }
+
+  /**
+   * Get all available formation keys
+   * @returns {string[]} Array of formation keys
+   */
+  static getFormationKeys() {
+    return Object.keys(GameConfig.FORMATIONS);
+  }
+
+  /**
    * Get random X position within safe spawn area
    * @returns {number} X coordinate for spawning
    */
@@ -111,84 +131,34 @@ export default class EnemySpawner {
   }
 
   /**
-   * Spawn V-formation (5 ships in V shape)
+   * Spawn a formation from config
+   * @param {string} formationKey - Key from GameConfig.FORMATIONS
    * @param {number} centerX - Center X position of formation
    * @param {number} startY - Starting Y position (top of screen)
    */
-  spawnVFormation(centerX, startY = -50) {
-    const color = this.getRandomColor();
-    const type = this.getRandomType();
-    const spacing = this.shipSpacing;
-
-    // V-formation positions (relative to center)
-    // Front ship at center, then pairs spreading back
-    const positions = [
-      { x: 0, y: 0 },                    // Lead ship
-      { x: -spacing, y: spacing },       // Left wing
-      { x: spacing, y: spacing },        // Right wing
-      { x: -spacing * 2, y: spacing * 2 }, // Far left
-      { x: spacing * 2, y: spacing * 2 },  // Far right
-    ];
-
-    positions.forEach((pos) => {
-      const x = centerX + pos.x;
-      const y = startY + pos.y;
-
-      // Only spawn if within screen bounds
-      if (x > this.spawnMargin && x < this.screenWidth - this.spawnMargin) {
-        this.createEnemy(x, y, type, color);
-      }
-    });
-  }
-
-  /**
-   * Spawn line formation (horizontal row of 3-5 ships)
-   * @param {number} centerX - Center X position of formation
-   * @param {number} startY - Starting Y position
-   */
-  spawnLineFormation(centerX, startY = -30) {
-    const color = this.getRandomColor();
-    const type = this.getRandomType();
-    const spacing = this.shipSpacing;
-
-    // Random number of ships (3-5)
-    const shipCount = Phaser.Math.Between(3, 5);
-
-    // Calculate starting X to center the formation
-    const totalWidth = (shipCount - 1) * spacing;
-    const startX = centerX - totalWidth / 2;
-
-    for (let i = 0; i < shipCount; i++) {
-      const x = startX + i * spacing;
-
-      // Only spawn if within screen bounds
-      if (x > this.spawnMargin && x < this.screenWidth - this.spawnMargin) {
-        this.createEnemy(x, startY, type, color);
-      }
+  spawnFormation(formationKey, centerX, startY = -50) {
+    const config = GameConfig.FORMATIONS[formationKey];
+    if (!config) {
+      console.warn(`Unknown formation: ${formationKey}`);
+      return;
     }
-  }
 
-  /**
-   * Spawn diamond formation (4 ships in diamond shape)
-   * @param {number} centerX - Center X position of formation
-   * @param {number} startY - Starting Y position
-   */
-  spawnDiamondFormation(centerX, startY = -50) {
     const color = this.getRandomColor();
-    const type = this.getRandomType();
+    const type = this.getRandomTypeFrom(config.types);
     const spacing = this.shipSpacing;
 
-    // Diamond positions (relative to center)
-    const positions = [
-      { x: 0, y: 0 },              // Top
-      { x: -spacing, y: spacing }, // Left
-      { x: spacing, y: spacing },  // Right
-      { x: 0, y: spacing * 2 },    // Bottom
-    ];
+    // Get positions, handling variable-length formations
+    let positions = [...config.positions];
+    if (config.minShips && config.maxShips) {
+      const shipCount = Phaser.Math.Between(config.minShips, config.maxShips);
+      // Center the subset of positions
+      const startIndex = Math.floor((positions.length - shipCount) / 2);
+      positions = positions.slice(startIndex, startIndex + shipCount);
+    }
 
     positions.forEach((pos) => {
-      const x = centerX + pos.x;
-      const y = startY + pos.y;
+      const x = centerX + pos.x * spacing;
+      const y = startY + pos.y * spacing;
 
       // Only spawn if within screen bounds
       if (x > this.spawnMargin && x < this.screenWidth - this.spawnMargin) {
@@ -198,24 +168,13 @@ export default class EnemySpawner {
   }
 
   /**
-   * Spawn a random formation type
+   * Spawn a random formation type from config
    */
   spawnRandomFormation() {
-    const formations = ['v', 'line', 'diamond'];
-    const formation = Phaser.Math.RND.pick(formations);
+    const formationKeys = Object.keys(GameConfig.FORMATIONS);
+    const formationKey = Phaser.Math.RND.pick(formationKeys);
     const x = this.getRandomSpawnX();
-
-    switch (formation) {
-      case 'v':
-        this.spawnVFormation(x);
-        break;
-      case 'line':
-        this.spawnLineFormation(x);
-        break;
-      case 'diamond':
-        this.spawnDiamondFormation(x);
-        break;
-    }
+    this.spawnFormation(formationKey, x);
   }
 
   /**

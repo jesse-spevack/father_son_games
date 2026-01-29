@@ -10,6 +10,8 @@ import Mine from '../sprites/Mine.js';
 import PowerUp, { PowerUpType } from '../sprites/PowerUp.js';
 import GameState from '../systems/GameState.js';
 import UIManager from '../systems/UIManager.js';
+import VisualEffectsManager from '../systems/VisualEffectsManager.js';
+import PoolManager from '../systems/PoolManager.js';
 import GameConfig from '../config/GameConfig.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -20,6 +22,9 @@ export default class GameScene extends Phaser.Scene {
   create() {
     // Initialize centralized game state
     this.gameState = new GameState();
+
+    // Initialize pool manager for centralized object pool management
+    this.pools = new PoolManager(this);
 
     // Add scrolling background
     this.background = this.add.tileSprite(
@@ -37,27 +42,20 @@ export default class GameScene extends Phaser.Scene {
       this.cameras.main.height - 100
     );
 
-    // Create enemy bullet group with object pooling
-    this.enemyBullets = this.physics.add.group({
-      classType: EnemyBullet,
+    // Create enemy bullet pool
+    this.enemyBullets = this.pools.register('enemyBullets', EnemyBullet, {
       maxSize: GameConfig.ENEMY_BULLET.POOL_SIZE,
-      runChildUpdate: true, // Ensures preUpdate is called on enemy bullets
     });
 
     // Initialize enemy spawner with bullet group for shooting
     this.enemySpawner = new EnemySpawner(this, this.enemyBullets);
 
-    // Initialize mine group and spawn timer
-    this.mines = this.physics.add.group({
-      classType: Mine,
-      runChildUpdate: true
-    });
+    // Create mine pool
+    this.mines = this.pools.register('mines', Mine);
 
-    // Initialize power-up group
-    this.powerUps = this.physics.add.group({
-      classType: PowerUp,
+    // Create power-up pool
+    this.powerUps = this.pools.register('powerUps', PowerUp, {
       maxSize: GameConfig.POWER_UP.POOL_SIZE,
-      runChildUpdate: true
     });
 
     // Initialize difficulty manager
@@ -101,6 +99,9 @@ export default class GameScene extends Phaser.Scene {
     this.uiManager = new UIManager(this);
     this.uiManager.create(this.gameState.lives);
 
+    // Create visual effects manager
+    this.vfx = new VisualEffectsManager(this);
+
     // Initialize boss manager
     this.bossManager = new BossManager(this, this.enemySpawner, this.enemyBullets);
     this.collisionManager.setBossManager(this.bossManager);
@@ -132,6 +133,16 @@ export default class GameScene extends Phaser.Scene {
     this.events.on('enemyKilled', () => {
       this.gameState.recordKill();
     });
+
+    // Handle explosion effects (decoupled from CollisionManager)
+    this.events.on('playExplosion', (data) => {
+      this.playExplosion(data.x, data.y, data.scale);
+    });
+
+    // Handle life loss (decoupled from CollisionManager)
+    this.events.on('loseLife', () => {
+      this.loseLife();
+    });
   }
 
   /**
@@ -154,11 +165,9 @@ export default class GameScene extends Phaser.Scene {
    * Setup bullet object pool for efficient bullet management.
    */
   setupBullets() {
-    // Create bullet group with object pooling
-    this.bullets = this.physics.add.group({
-      classType: Bullet,
+    // Create bullet pool via PoolManager
+    this.bullets = this.pools.register('bullets', Bullet, {
       maxSize: GameConfig.BULLET.POOL_SIZE,
-      runChildUpdate: true, // Ensures preUpdate is called on bullets
     });
 
     // Track last fire time for rate limiting
@@ -382,13 +391,10 @@ export default class GameScene extends Phaser.Scene {
    * Play a random explosion animation at the given position.
    * @param {number} x - X position
    * @param {number} y - Y position
+   * @param {number} [scale=1] - Explosion scale
    */
-  playExplosion(x, y) {
-    const explosions = ['explosion1', 'explosion2', 'explosion3'];
-    const key = Phaser.Math.RND.pick(explosions);
-    const explosion = this.add.sprite(x, y, 'sprites');
-    explosion.play(key);
-    explosion.once('animationcomplete', () => explosion.destroy());
+  playExplosion(x, y, scale = 1) {
+    this.vfx.explosion(x, y, scale);
   }
 
   /**
@@ -406,6 +412,12 @@ export default class GameScene extends Phaser.Scene {
     if (this.uiManager) {
       this.uiManager.destroy();
     }
+    if (this.vfx) {
+      this.vfx.destroy();
+    }
+    if (this.pools) {
+      this.pools.destroy();
+    }
 
     // Remove event listeners set up in setupBossEvents
     this.events.off('bossSpawned');
@@ -415,5 +427,7 @@ export default class GameScene extends Phaser.Scene {
     this.events.off('addScore');
     this.events.off('awardLife');
     this.events.off('enemyKilled');
+    this.events.off('playExplosion');
+    this.events.off('loseLife');
   }
 }

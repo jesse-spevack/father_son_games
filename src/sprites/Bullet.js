@@ -3,11 +3,12 @@ import BaseProjectile from './BaseProjectile';
 /**
  * Player bullet class for the weapons system.
  * Uses object pooling - bullets are reused when off-screen.
+ * Config loaded from GameConfig.PROJECTILES.player_bullet
  */
 export default class Bullet extends BaseProjectile {
   constructor(scene, x, y) {
-    // Player bullets move upward (direction = -1) at speed 500
-    super(scene, x, y, 'sprites', 'vulcan_1.png', 500, -1);
+    const config = BaseProjectile.getTypeConfig('player_bullet');
+    super(scene, x, y, config.texture, config.frame, config.speed, config.direction);
   }
 
   /**

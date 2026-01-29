@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import GameConfig from '../config/GameConfig.js';
 
 /**
  * Base class for all projectiles (player bullets, enemy bullets, etc.)
@@ -6,6 +7,23 @@ import Phaser from 'phaser';
  * Subclasses must implement isOffScreen() to define when to deactivate.
  */
 export default class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
+  /**
+   * Get projectile config by type key
+   * @param {string} type - Projectile type key from GameConfig.PROJECTILES
+   * @returns {Object|null} Projectile config or null
+   */
+  static getTypeConfig(type) {
+    return GameConfig.PROJECTILES[type] || null;
+  }
+
+  /**
+   * Get all projectile type keys
+   * @returns {string[]}
+   */
+  static getTypeKeys() {
+    return Object.keys(GameConfig.PROJECTILES);
+  }
+
   /**
    * @param {Phaser.Scene} scene - The scene this projectile belongs to
    * @param {number} x - Initial X position
