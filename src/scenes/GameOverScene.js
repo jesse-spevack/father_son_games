@@ -75,10 +75,102 @@ export default class GameOverScene extends Phaser.Scene {
       fill: '#00ff00',
     }).setOrigin(0.5);
 
-    this.add.text(centerX, 360, 'Press ENTER to submit', {
-      font: '16px monospace',
+    // Create touch-friendly letter grid for mobile
+    this.createLetterGrid(centerX, 360);
+
+    this.add.text(centerX, 580, 'Keyboard also works', {
+      font: '14px monospace',
+      fill: '#666666',
+    }).setOrigin(0.5);
+  }
+
+  createLetterGrid(centerX, startY) {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const cols = 9;
+    const buttonSize = 40;
+    const padding = 6;
+    const totalWidth = cols * (buttonSize + padding) - padding;
+    const startX = centerX - totalWidth / 2 + buttonSize / 2;
+
+    this.letterButtons = [];
+
+    letters.split('').forEach((letter, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * (buttonSize + padding);
+      const y = startY + row * (buttonSize + padding);
+
+      // Button background
+      const bg = this.add.rectangle(x, y, buttonSize, buttonSize, 0x333333)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => bg.setFillStyle(0x555555))
+        .on('pointerout', () => bg.setFillStyle(0x333333))
+        .on('pointerdown', () => this.addLetter(letter));
+
+      // Button text
+      const text = this.add.text(x, y, letter, {
+        font: '20px monospace',
+        fill: '#ffffff',
+      }).setOrigin(0.5);
+
+      this.letterButtons.push({ bg, text });
+    });
+
+    // Backspace button
+    const backX = startX + 6 * (buttonSize + padding);
+    const backY = startY + 3 * (buttonSize + padding);
+    const backBg = this.add.rectangle(backX, backY, buttonSize * 2 + padding, buttonSize, 0x663333)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerover', () => backBg.setFillStyle(0x884444))
+      .on('pointerout', () => backBg.setFillStyle(0x663333))
+      .on('pointerdown', () => this.removeLetter());
+    this.add.text(backX, backY, 'DEL', {
+      font: '18px monospace',
+      fill: '#ffffff',
+    }).setOrigin(0.5);
+
+    // Submit button
+    const submitX = centerX;
+    const submitY = startY + 4 * (buttonSize + padding) + 10;
+    this.submitButton = this.add.rectangle(submitX, submitY, 160, 44, 0x336633)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerover', () => this.submitButton.setFillStyle(0x448844))
+      .on('pointerout', () => this.submitButton.setFillStyle(0x336633))
+      .on('pointerdown', () => this.trySubmit());
+    this.submitText = this.add.text(submitX, submitY, 'SUBMIT', {
+      font: '20px monospace',
       fill: '#888888',
     }).setOrigin(0.5);
+  }
+
+  addLetter(letter) {
+    if (this.initials.length < 3) {
+      this.initials += letter;
+      this.updateInitialsDisplay();
+      this.updateSubmitButton();
+    }
+  }
+
+  removeLetter() {
+    if (this.initials.length > 0) {
+      this.initials = this.initials.slice(0, -1);
+      this.updateInitialsDisplay();
+      this.updateSubmitButton();
+    }
+  }
+
+  updateSubmitButton() {
+    if (this.submitText) {
+      const ready = this.initials.length === 3;
+      this.submitText.setFill(ready ? '#ffffff' : '#888888');
+      this.submitButton.setFillStyle(ready ? 0x336633 : 0x222222);
+    }
+  }
+
+  trySubmit() {
+    if (this.initials.length === 3) {
+      this.submitScore();
+    }
   }
 
   handleKeyInput(event) {
