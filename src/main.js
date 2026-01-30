@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import GameScene from './scenes/GameScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
+import ProgressManager from './systems/ProgressManager.js';
 
 // Game configuration
 const config = {
@@ -29,6 +30,9 @@ const config = {
 
 // Create game instance
 const game = new Phaser.Game(config);
+
+// Initialize global progress manager (accessible via this.game.registry.get('progress'))
+game.registry.set('progress', new ProgressManager());
 
 // Handle visibility change (pause when tab is hidden)
 document.addEventListener('visibilitychange', () => {

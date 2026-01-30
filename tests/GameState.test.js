@@ -100,6 +100,26 @@ describe('GameState', () => {
     });
   });
 
+  describe('addCredits()', () => {
+    it('should add credits to total', () => {
+      gameState.addCredits(100);
+      expect(gameState.credits).toBe(100);
+    });
+
+    it('should accumulate multiple credit additions', () => {
+      gameState.addCredits(50);
+      gameState.addCredits(30);
+      gameState.addCredits(20);
+      expect(gameState.credits).toBe(100);
+    });
+
+    it('should return the new credit total', () => {
+      gameState.addCredits(50);
+      const result = gameState.addCredits(25);
+      expect(result).toBe(75);
+    });
+  });
+
   describe('timer functions', () => {
     it('should set game start time', () => {
       gameState.startTimer(1000);
@@ -130,6 +150,7 @@ describe('GameState', () => {
       gameState.difficulty = 3;
       gameState.enemiesKilled = 25;
       gameState.timeSurvived = 120;
+      gameState.credits = 500;
 
       const stats = gameState.getStats();
 
@@ -138,6 +159,7 @@ describe('GameState', () => {
         wave: 3,
         enemiesKilled: 25,
         timeSurvived: 120,
+        credits: 500,
       });
     });
 

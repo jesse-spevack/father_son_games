@@ -12,11 +12,28 @@ export default class GameOverScene extends Phaser.Scene {
       wave: data.wave || 1,
       enemiesKilled: data.enemiesKilled || 0,
       timeSurvived: data.timeSurvived || 0,
+      credits: data.credits || 0,
     };
     this.initials = '';
     this.qualifiesForLeaderboard = false;
     this.submitting = false;
     this.submitted = false;
+
+    // Save progress to localStorage
+    this.saveProgress();
+  }
+
+  /**
+   * Save game progress to localStorage via ProgressManager.
+   */
+  saveProgress() {
+    const progress = this.game.registry.get('progress');
+    if (progress) {
+      progress.recordGameEnd(this.stats);
+      this.totalCredits = progress.getCredits();
+    } else {
+      this.totalCredits = this.stats.credits;
+    }
   }
 
   async create() {
@@ -42,6 +59,15 @@ export default class GameOverScene extends Phaser.Scene {
     ].join('  |  '), {
       font: '16px monospace',
       fill: '#888888',
+    }).setOrigin(0.5);
+
+    // Credits display
+    this.add.text(centerX, 185, [
+      `Credits: +${this.stats.credits}`,
+      `Total: ${this.totalCredits}`,
+    ].join('  |  '), {
+      font: '16px monospace',
+      fill: '#ffdd00',
     }).setOrigin(0.5);
 
     // Check if score qualifies for leaderboard

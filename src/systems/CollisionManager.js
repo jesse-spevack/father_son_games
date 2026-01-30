@@ -111,7 +111,15 @@ export default class CollisionManager {
     if (enemy.takeDamage(1)) {
       this.scene.events.emit('addScore', enemy.points);
       this.scene.events.emit('enemyKilled');
-      this.trySpawnPowerUp(enemy.x, enemy.y, enemy.getLoot());
+
+      // Drop credits from loot table
+      const loot = enemy.getLoot();
+      if (loot && loot.credits) {
+        const credits = Phaser.Math.Between(loot.credits.min, loot.credits.max);
+        this.scene.events.emit('addCredits', credits);
+      }
+
+      this.trySpawnPowerUp(enemy.x, enemy.y, loot);
     }
   }
 

@@ -1,6 +1,8 @@
+import GameConfig from '../config/GameConfig.js';
+
 /**
  * UIManager - Handles all UI elements for the game scene.
- * Manages health bar, score text, lives display, and wave display.
+ * Manages health bar, score text, lives display, wave display, and credits.
  */
 export default class UIManager {
   /**
@@ -16,6 +18,10 @@ export default class UIManager {
     this.scoreText = null;
     this.livesIcons = [];
     this.waveText = null;
+
+    // Credits display
+    this.coinIcon = null;
+    this.creditsText = null;
 
     // Boss UI elements
     this.bossHealthBarBg = null;
@@ -34,6 +40,7 @@ export default class UIManager {
     this.createScoreText();
     this.createLivesDisplay(initialLives);
     this.createWaveDisplay();
+    this.createCreditsDisplay();
   }
 
   /**
@@ -41,10 +48,14 @@ export default class UIManager {
    * @param {object} gameState - Object containing current game state
    * @param {number} gameState.healthPercent - Player health as a decimal (0-1)
    * @param {number} gameState.score - Current score
+   * @param {number} [gameState.credits] - Current credits (optional)
    */
   update(gameState) {
     this.updateHealthBar(gameState.healthPercent);
     this.updateScore(gameState.score);
+    if (gameState.credits !== undefined) {
+      this.updateCredits(gameState.credits);
+    }
   }
 
   /**
@@ -82,6 +93,45 @@ export default class UIManager {
    */
   updateScore(score) {
     this.scoreText.setText('Score: ' + score);
+  }
+
+  /**
+   * Create credits display with coin icon.
+   */
+  createCreditsDisplay() {
+    const cfg = GameConfig.CURRENCY;
+    const width = this.scene.cameras.main.width;
+
+    // Coin icon
+    this.coinIcon = this.scene.add.image(
+      width - cfg.ICON_X_OFFSET,
+      cfg.ICON_Y,
+      'coin'
+    );
+    this.coinIcon.setScale(0.04); // Scale down the coin image
+    this.coinIcon.setScrollFactor(0);
+    this.coinIcon.setDepth(100);
+
+    // Credits text
+    this.creditsText = this.scene.add.text(
+      width - cfg.TEXT_X_OFFSET,
+      cfg.ICON_Y,
+      '0',
+      {
+        font: '16px monospace',
+        fill: '#ffdd00'
+      }
+    ).setOrigin(1, 0.5).setScrollFactor(0).setDepth(100);
+  }
+
+  /**
+   * Update credits display.
+   * @param {number} credits - Current credits
+   */
+  updateCredits(credits) {
+    if (this.creditsText) {
+      this.creditsText.setText(credits.toString());
+    }
   }
 
   /**
@@ -230,6 +280,10 @@ export default class UIManager {
     if (this.scoreText) this.scoreText.destroy();
     if (this.waveText) this.waveText.destroy();
 
+    // Destroy credits display
+    if (this.coinIcon) this.coinIcon.destroy();
+    if (this.creditsText) this.creditsText.destroy();
+
     // Destroy lives icons
     this.livesIcons.forEach(icon => icon.destroy());
     this.livesIcons = [];
@@ -244,6 +298,8 @@ export default class UIManager {
     this.healthBar = null;
     this.scoreText = null;
     this.waveText = null;
+    this.coinIcon = null;
+    this.creditsText = null;
     this.bossNameText = null;
     this.bossHealthBarBg = null;
     this.bossHealthBar = null;

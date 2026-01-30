@@ -138,6 +138,11 @@ export default class GameScene extends Phaser.Scene {
       this.gameState.recordKill();
     });
 
+    // Handle credit drops from enemies
+    this.events.on('addCredits', (amount) => {
+      this.gameState.addCredits(amount);
+    });
+
     // Handle explosion effects (decoupled from CollisionManager)
     this.events.on('playExplosion', (data) => {
       this.playExplosion(data.x, data.y, data.scale);
@@ -397,7 +402,8 @@ export default class GameScene extends Phaser.Scene {
     // Update UI
     this.uiManager.update({
       healthPercent: this.player.getHealthPercent(),
-      score: this.gameState.score
+      score: this.gameState.score,
+      credits: this.gameState.credits
     });
 
     // Update dev console (if enabled)
@@ -489,6 +495,7 @@ export default class GameScene extends Phaser.Scene {
     this.events.off('addScore');
     this.events.off('awardLife');
     this.events.off('enemyKilled');
+    this.events.off('addCredits');
     this.events.off('playExplosion');
     this.events.off('loseLife');
   }

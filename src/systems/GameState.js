@@ -6,6 +6,7 @@ import GameConfig from '../config/GameConfig.js';
  * @property {number} wave - Final wave/difficulty level
  * @property {number} enemiesKilled - Total enemies killed
  * @property {number} timeSurvived - Survival time in seconds
+ * @property {number} credits - Credits earned this run
  */
 
 /**
@@ -36,6 +37,8 @@ export default class GameState {
     this.timeSurvived = 0;
     /** @type {number} Game start timestamp */
     this.gameStartTime = 0;
+    /** @type {number} Credits earned this run */
+    this.credits = 0;
 
     this.reset();
   }
@@ -54,6 +57,7 @@ export default class GameState {
     this.enemiesKilled = 0;
     this.timeSurvived = 0; // in seconds
     this.gameStartTime = 0;
+    this.credits = 0;
   }
 
   /**
@@ -80,6 +84,16 @@ export default class GameState {
    */
   recordKill() {
     this.enemiesKilled++;
+  }
+
+  /**
+   * Add credits to the player's total.
+   * @param {number} amount - Credits to add
+   * @returns {number} The new credit total
+   */
+  addCredits(amount) {
+    this.credits += amount;
+    return this.credits;
   }
 
   /**
@@ -110,6 +124,7 @@ export default class GameState {
       wave: this.difficulty,
       enemiesKilled: this.enemiesKilled,
       timeSurvived: this.timeSurvived,
+      credits: this.credits,
     };
   }
 }

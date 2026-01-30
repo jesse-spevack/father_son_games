@@ -63,6 +63,9 @@ export default class BootScene extends Phaser.Scene {
 
     // Load boss sprites
     this.loadBossSprites();
+
+    // Load UI assets
+    this.loadUIAssets();
   }
 
   loadBossSprites() {
@@ -70,6 +73,11 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('boss_megaship', 'assets/Boss/space_boss.png');
     this.load.image('boss_destroyer', 'assets/boss-2.png');
     this.load.image('boss_carrier', 'assets/boss-3.jpg');
+  }
+
+  loadUIAssets() {
+    // Currency icon
+    this.load.image('coin', 'assets/coin.jpg');
   }
 
   create() {

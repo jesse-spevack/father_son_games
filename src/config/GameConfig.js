@@ -725,6 +725,17 @@ const GameConfig = {
     },
   },
 
+  // Currency system
+  CURRENCY: {
+    START_CREDITS: 0,
+    // Display position (relative to score)
+    ICON_X_OFFSET: 25, // pixels from right edge
+    ICON_Y: 30,
+    TEXT_X_OFFSET: 45, // pixels from right edge (after icon)
+    // Boss rewards
+    BOSS_CREDITS_MULT: 10, // bosses drop credits based on points / this
+  },
+
   // Screen and visual constants
   DISPLAY: {
     OFFSCREEN_BUFFER: 50, // pixels beyond screen before destroying
