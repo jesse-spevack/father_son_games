@@ -76,8 +76,8 @@ export default class BootScene extends Phaser.Scene {
   }
 
   loadUIAssets() {
-    // Currency icon
-    this.load.image('coin', 'assets/coin.jpg');
+    // Currency icon (transparent PNG)
+    this.load.image('coin', 'assets/coin.png');
   }
 
   create() {

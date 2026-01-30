@@ -728,12 +728,16 @@ const GameConfig = {
   // Currency system
   CURRENCY: {
     START_CREDITS: 0,
-    // Display position (relative to score)
-    ICON_X_OFFSET: 25, // pixels from right edge
-    ICON_Y: 30,
-    TEXT_X_OFFSET: 45, // pixels from right edge (after icon)
+    // HUD display position (below score, right-aligned)
+    HUD_Y: 32, // Y position for credits row
+    ICON_SIZE: 20, // Display size for coin icon
     // Boss rewards
     BOSS_CREDITS_MULT: 10, // bosses drop credits based on points / this
+    // Collectible coin settings
+    DROP_SPEED: 80, // How fast coins fall
+    COLLECT_RADIUS: 30, // Pickup distance
+    LIFETIME: 8000, // ms before despawn
+    MAGNET_RANGE: 100, // pixels - coins drift toward player within this range
   },
 
   // Screen and visual constants

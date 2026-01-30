@@ -8,6 +8,7 @@ import CollisionManager from '../systems/CollisionManager.js';
 import BossManager from '../systems/BossManager.js';
 import Mine from '../sprites/Mine.js';
 import PowerUp, { PowerUpType } from '../sprites/PowerUp.js';
+import Coin from '../sprites/Coin.js';
 import GameState from '../systems/GameState.js';
 import UIManager from '../systems/UIManager.js';
 import VisualEffectsManager from '../systems/VisualEffectsManager.js';
@@ -59,6 +60,11 @@ export default class GameScene extends Phaser.Scene {
       maxSize: GameConfig.POWER_UP.POOL_SIZE,
     });
 
+    // Create coin pool for currency drops
+    this.coins = this.pools.register('coins', Coin, {
+      maxSize: 50,
+    });
+
     // Initialize difficulty manager
     this.difficultyManager = new DifficultyManager();
 
@@ -93,7 +99,8 @@ export default class GameScene extends Phaser.Scene {
       this.enemySpawner.getEnemyGroup(),
       this.mines,
       this.player,
-      this.powerUps
+      this.powerUps,
+      this.coins
     );
 
     // Create UI manager and initialize UI elements
@@ -138,9 +145,14 @@ export default class GameScene extends Phaser.Scene {
       this.gameState.recordKill();
     });
 
-    // Handle credit drops from enemies
+    // Handle credit drops from enemies (for direct credit additions)
     this.events.on('addCredits', (amount) => {
       this.gameState.addCredits(amount);
+    });
+
+    // Handle coin spawning (from boss kills, etc.)
+    this.events.on('spawnCoins', (data) => {
+      this.collisionManager.spawnCoins(data.x, data.y, data.credits);
     });
 
     // Handle explosion effects (decoupled from CollisionManager)
@@ -496,6 +508,7 @@ export default class GameScene extends Phaser.Scene {
     this.events.off('awardLife');
     this.events.off('enemyKilled');
     this.events.off('addCredits');
+    this.events.off('spawnCoins');
     this.events.off('playExplosion');
     this.events.off('loseLife');
   }

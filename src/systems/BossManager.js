@@ -183,10 +183,14 @@ export default class BossManager {
     // Award points via event
     this.scene.events.emit('addScore', boss.points);
 
-    // Award credits (boss points divided by multiplier)
+    // Spawn coins (boss drops a shower of coins!)
     const bossCredits = Math.floor(boss.points / GameConfig.CURRENCY.BOSS_CREDITS_MULT);
-    this.scene.events.emit('addCredits', bossCredits);
-    console.log(`Credits awarded: ${bossCredits}`);
+    this.scene.events.emit('spawnCoins', {
+      x: boss.x,
+      y: boss.y,
+      credits: { min: bossCredits, max: bossCredits }
+    });
+    console.log(`Boss coins spawned: ${bossCredits} credits`);
 
     // Award extra life via event
     if (GameConfig.BOSS.REWARD_EXTRA_LIFE) {

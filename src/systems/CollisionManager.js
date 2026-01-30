@@ -32,12 +32,14 @@ export default class CollisionManager {
    * @param {Phaser.Physics.Arcade.Group} mines - Mine group
    * @param {Player} player - The player sprite
    * @param {Phaser.Physics.Arcade.Group} powerUps - Power-up group
+   * @param {Phaser.Physics.Arcade.Group} coins - Coin group
    */
-  setup(bullets, enemyBullets, enemies, mines, player, powerUps) {
+  setup(bullets, enemyBullets, enemies, mines, player, powerUps, coins) {
     // Store references for boss collision setup
     this.bullets = bullets;
     this.player = player;
     this.powerUps = powerUps;
+    this.coins = coins;
     this.enemies = enemies;
     // Player bullets vs enemies
     this.scene.physics.add.overlap(
@@ -93,6 +95,15 @@ export default class CollisionManager {
       null,
       this
     );
+
+    // Coins vs player (collection)
+    this.scene.physics.add.overlap(
+      coins,
+      player,
+      this.coinHitPlayer,
+      null,
+      this
+    );
   }
 
   /**
@@ -112,15 +123,64 @@ export default class CollisionManager {
       this.scene.events.emit('addScore', enemy.points);
       this.scene.events.emit('enemyKilled');
 
-      // Drop credits from loot table
+      // Drop coins from loot table
       const loot = enemy.getLoot();
       if (loot && loot.credits) {
-        const credits = Phaser.Math.Between(loot.credits.min, loot.credits.max);
-        this.scene.events.emit('addCredits', credits);
+        this.spawnCoins(enemy.x, enemy.y, loot.credits);
       }
 
       this.trySpawnPowerUp(enemy.x, enemy.y, loot);
     }
+  }
+
+  /**
+   * Spawn collectible coins at position.
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {Object} credits - { min, max } credit range
+   */
+  spawnCoins(x, y, credits) {
+    const totalValue = Phaser.Math.Between(credits.min, credits.max);
+
+    // Determine how many coins to spawn (more coins for larger values)
+    let numCoins;
+    if (totalValue <= 10) {
+      numCoins = 1;
+    } else if (totalValue <= 25) {
+      numCoins = Phaser.Math.Between(1, 2);
+    } else if (totalValue <= 50) {
+      numCoins = Phaser.Math.Between(2, 3);
+    } else {
+      numCoins = Phaser.Math.Between(3, 5);
+    }
+
+    // Split value among coins
+    const valuePerCoin = Math.ceil(totalValue / numCoins);
+
+    for (let i = 0; i < numCoins; i++) {
+      // Slight position offset for each coin
+      const offsetX = Phaser.Math.Between(-20, 20);
+      const offsetY = Phaser.Math.Between(-10, 10);
+
+      const coin = this.coins.get(x + offsetX, y + offsetY);
+      if (coin) {
+        // Last coin gets remainder to ensure exact total
+        const value = (i === numCoins - 1)
+          ? totalValue - (valuePerCoin * (numCoins - 1))
+          : valuePerCoin;
+        coin.spawn(x + offsetX, y + offsetY, value);
+      }
+    }
+  }
+
+  /**
+   * Handle player collecting a coin.
+   */
+  coinHitPlayer(obj1, obj2) {
+    // Determine which is the coin (has collect method and value property)
+    const coin = obj1.value !== undefined ? obj1 : obj2;
+    const player = obj1.value !== undefined ? obj2 : obj1;
+    coin.collect(player);
   }
 
   /**
