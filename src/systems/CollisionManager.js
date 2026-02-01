@@ -140,36 +140,10 @@ export default class CollisionManager {
    * @param {Object} credits - { min, max } credit range
    */
   spawnCoins(x, y, credits) {
-    const totalValue = Phaser.Math.Between(credits.min, credits.max);
-
-    // Determine how many coins to spawn (more coins for larger values)
-    let numCoins;
-    if (totalValue <= 10) {
-      numCoins = 1;
-    } else if (totalValue <= 25) {
-      numCoins = Phaser.Math.Between(1, 2);
-    } else if (totalValue <= 50) {
-      numCoins = Phaser.Math.Between(2, 3);
-    } else {
-      numCoins = Phaser.Math.Between(3, 5);
-    }
-
-    // Split value among coins
-    const valuePerCoin = Math.ceil(totalValue / numCoins);
-
-    for (let i = 0; i < numCoins; i++) {
-      // Slight position offset for each coin
-      const offsetX = Phaser.Math.Between(-20, 20);
-      const offsetY = Phaser.Math.Between(-10, 10);
-
-      const coin = this.coins.get(x + offsetX, y + offsetY);
-      if (coin) {
-        // Last coin gets remainder to ensure exact total
-        const value = (i === numCoins - 1)
-          ? totalValue - (valuePerCoin * (numCoins - 1))
-          : valuePerCoin;
-        coin.spawn(x + offsetX, y + offsetY, value);
-      }
+    const value = Phaser.Math.Between(credits.min, credits.max);
+    const coin = this.coins.get(x, y);
+    if (coin) {
+      coin.spawn(x, y, value);
     }
   }
 
