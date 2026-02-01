@@ -16,9 +16,12 @@ export default class Coin extends Phaser.Physics.Arcade.Sprite {
     this.value = 0;
     this.spawnTime = 0;
 
-    // Set up physics body
-    this.body.setCircle(15);
-    this.setDisplaySize(32, 32);
+    // Scale down the 1024x1024 image to ~24px
+    this.baseScale = 0.024;
+    this.setScale(this.baseScale);
+
+    // Set up physics body (scaled to match visual size)
+    this.body.setCircle(12);
   }
 
   /**
@@ -32,19 +35,21 @@ export default class Coin extends Phaser.Physics.Arcade.Sprite {
     this.setActive(true);
     this.setVisible(true);
     this.alpha = 1;
+    this.angle = 0;
+    this.setScale(this.baseScale);
 
     this.value = value;
     this.spawnTime = this.scene.time.now;
 
     // Random initial velocity (slight spread)
-    const angle = Phaser.Math.FloatBetween(-0.5, 0.5);
+    const spreadAngle = Phaser.Math.FloatBetween(-0.5, 0.5);
     const speed = GameConfig.CURRENCY.DROP_SPEED;
     this.setVelocity(
-      Math.sin(angle) * speed * 0.5,
+      Math.sin(spreadAngle) * speed * 0.5,
       speed
     );
 
-    // Spinning/pulsing effect
+    // Spinning effect
     this.scene.tweens.add({
       targets: this,
       angle: 360,
@@ -56,8 +61,8 @@ export default class Coin extends Phaser.Physics.Arcade.Sprite {
     // Subtle scale pulse
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.1,
-      scaleY: 1.1,
+      scaleX: this.baseScale * 1.15,
+      scaleY: this.baseScale * 1.15,
       duration: 300,
       yoyo: true,
       repeat: -1,
@@ -74,7 +79,7 @@ export default class Coin extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(0, 0);
     this.scene.tweens.killTweensOf(this);
     this.angle = 0;
-    this.setDisplaySize(32, 32);
+    this.setScale(this.baseScale);
   }
 
   /**
