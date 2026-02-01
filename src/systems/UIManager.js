@@ -100,30 +100,25 @@ export default class UIManager {
    * Positioned below the score, right-aligned.
    */
   createCreditsDisplay() {
-    const cfg = GameConfig.CURRENCY;
     const width = this.scene.cameras.main.width;
+    const y = 30; // Below score (which is at y=10)
 
-    // Credits text (right-aligned, leave room for coin icon)
+    // Coin icon (small, right side)
+    this.coinIcon = this.scene.add.image(width - 45, y, 'coin');
+    this.coinIcon.setDisplaySize(16, 16);
+    this.coinIcon.setScrollFactor(0);
+    this.coinIcon.setDepth(100);
+
+    // Credits text (right of icon)
     this.creditsText = this.scene.add.text(
       width - 10,
-      cfg.HUD_Y,
+      y,
       '0',
       {
-        font: '16px monospace',
+        font: '14px monospace',
         fill: '#ffdd00'
       }
     ).setOrigin(1, 0.5).setScrollFactor(0).setDepth(100);
-
-    // Coin icon (to the left of the credits number)
-    const iconX = this.creditsText.x - this.creditsText.width - cfg.ICON_SIZE / 2 - 5;
-    this.coinIcon = this.scene.add.image(
-      iconX,
-      cfg.HUD_Y,
-      'coin'
-    );
-    this.coinIcon.setDisplaySize(cfg.ICON_SIZE, cfg.ICON_SIZE);
-    this.coinIcon.setScrollFactor(0);
-    this.coinIcon.setDepth(100);
   }
 
   /**
@@ -133,12 +128,6 @@ export default class UIManager {
   updateCredits(credits) {
     if (this.creditsText) {
       this.creditsText.setText(credits.toString());
-      // Reposition coin icon based on text width
-      if (this.coinIcon) {
-        const cfg = GameConfig.CURRENCY;
-        const iconX = this.creditsText.x - this.creditsText.width - cfg.ICON_SIZE / 2 - 5;
-        this.coinIcon.setX(iconX);
-      }
     }
   }
 
