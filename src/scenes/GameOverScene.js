@@ -62,10 +62,7 @@ export default class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Credits display
-    this.add.text(centerX, 185, [
-      `Credits: +${this.stats.credits}`,
-      `Total: ${this.totalCredits}`,
-    ].join('  |  '), {
+    this.add.text(centerX, 190, `Space Credits: +${this.stats.credits}  (Total: ${this.totalCredits})`, {
       font: '16px monospace',
       fill: '#ffdd00',
     }).setOrigin(0.5);
@@ -76,7 +73,7 @@ export default class GameOverScene extends Phaser.Scene {
     if (this.qualifiesForLeaderboard) {
       this.showInitialsInput(centerX);
     } else {
-      this.showLeaderboard(centerX, 200);
+      this.showLeaderboard(centerX, 225);
       this.showRestartPrompt(centerX);
     }
 
