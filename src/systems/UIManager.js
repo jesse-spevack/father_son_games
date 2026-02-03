@@ -20,7 +20,6 @@ export default class UIManager {
     this.waveText = null;
 
     // Credits display
-    this.coinIcon = null;
     this.creditsText = null;
 
     // Boss UI elements
@@ -96,29 +95,23 @@ export default class UIManager {
   }
 
   /**
-   * Create credits display with coin icon.
+   * Create credits display.
    * Positioned below the score, right-aligned.
    */
   createCreditsDisplay() {
     const width = this.scene.cameras.main.width;
-    const y = 30; // Below score (which is at y=10)
+    const y = 32; // Below score (which is at y=10, ~16px font height)
 
-    // Coin icon (small, right side)
-    this.coinIcon = this.scene.add.image(width - 45, y, 'coin');
-    this.coinIcon.setDisplaySize(16, 16);
-    this.coinIcon.setScrollFactor(0);
-    this.coinIcon.setDepth(100);
-
-    // Credits text (right of icon)
+    // Credits text with label
     this.creditsText = this.scene.add.text(
       width - 10,
       y,
-      '0',
+      'Space Credits: 0',
       {
         font: '14px monospace',
         fill: '#ffdd00'
       }
-    ).setOrigin(1, 0.5).setScrollFactor(0).setDepth(100);
+    ).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
   }
 
   /**
@@ -127,7 +120,7 @@ export default class UIManager {
    */
   updateCredits(credits) {
     if (this.creditsText) {
-      this.creditsText.setText(credits.toString());
+      this.creditsText.setText('Space Credits: ' + credits);
     }
   }
 
@@ -278,7 +271,6 @@ export default class UIManager {
     if (this.waveText) this.waveText.destroy();
 
     // Destroy credits display
-    if (this.coinIcon) this.coinIcon.destroy();
     if (this.creditsText) this.creditsText.destroy();
 
     // Destroy lives icons
@@ -295,7 +287,6 @@ export default class UIManager {
     this.healthBar = null;
     this.scoreText = null;
     this.waveText = null;
-    this.coinIcon = null;
     this.creditsText = null;
     this.bossNameText = null;
     this.bossHealthBarBg = null;
